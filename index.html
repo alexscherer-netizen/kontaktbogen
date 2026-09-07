@@ -406,6 +406,38 @@ select.inp{appearance:none; padding-right:26px;
 .member-row .rl{font-size:12px; color:var(--ink-3)}
 
 /* ============================================================
+   Bereiche
+   ============================================================ */
+.gsec{display:flex; align-items:center; gap:8px; padding:14px 16px 6px}
+.gsec .rule{flex:1; height:1px; background:var(--line)}
+.grow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; padding:10px 16px; align-items:center}
+.grow .gname{font-size:13.5px; font-weight:500}
+.grow .gsub{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:3px}
+.grow.conflict{background:var(--crit-tint)}
+.grow.agree{background:var(--ok-tint)}
+.stance{display:flex; gap:3px; flex:none}
+.stance button{
+  border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2);
+  padding:6px 10px; cursor:pointer; font-size:12px; min-height:34px; white-space:nowrap;
+}
+.stance button:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}
+.stance button:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
+.stance button:hover{background:var(--sunken); color:var(--ink)}
+.stance button.on.ja{background:var(--ok); border-color:var(--ok); color:var(--bg)}
+.stance button.on.absprache{background:var(--warn); border-color:var(--warn); color:var(--bg)}
+.stance button.on.nein{background:var(--crit); border-color:var(--crit); color:var(--bg)}
+.gnote{margin:0 16px 12px; }
+.gsummary{display:flex; gap:8px; flex-wrap:wrap; padding:14px 16px}
+@media (max-width:640px){
+  .grow{grid-template-columns:1fr; gap:8px; padding:12px 14px}
+  .stance{width:100%}
+  .stance button{flex:1; min-height:42px; font-size:12.5px}
+  .gsec{padding:14px 14px 6px}
+  .gnote{margin:0 14px 12px}
+  .gsummary{padding:14px}
+}
+
+/* ============================================================
    Terminfindung
    ============================================================ */
 .cal-head{display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line)}
@@ -1202,7 +1234,7 @@ function AdminApp(props) {
 
   var loadDetail = useCallback(function (id) {
     if (!id) { setData(null); return Promise.resolve(); }
-    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule", "ps_availability", "ps_proposals", "ps_planning_members"];
+    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule", "ps_availability", "ps_proposals", "ps_planning_members", "ps_genres"];
     return Promise.all(names.map(function (n) { return sb.from(n).select("*").eq("planning_id", id); }))
       .then(function (res) {
         function s(i) { return res[i].data || []; }
@@ -1217,18 +1249,24 @@ function AdminApp(props) {
           schedule: s(5).sort(function (x, y) { return String(x.time_from || "").localeCompare(String(y.time_from || "")) || byPos(x, y); }),
           availability: s(6).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)); }),
           proposals: s(7).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)) || String(x.time_from).localeCompare(String(y.time_from)); }),
-          members: s(8)
+          members: s(8),
+          genres: s(9)
         });
-        /* Namen und Bilder der Beteiligten nachladen */
+        /* Profile nachladen: die Beteiligten und die Inhaber:in der Planung */
         var ids = s(8).map(function (m) { return m.user_id; });
-        if (!ids.length) return;
-        return sb.from("ps_profiles").select("user_id,display_name,role_label,avatar_url,city")
-          .in("user_id", ids).then(function (pr) {
+        var PF = "user_id,display_name,role_label,avatar_url,city,instagram,website,bio";
+        return sb.from("ps_plannings").select("owner_id").eq("id", id).maybeSingle().then(function (op) {
+          var ownerId = op.data && op.data.owner_id;
+          var all = ids.slice();
+          if (ownerId && all.indexOf(ownerId) < 0) all.push(ownerId);
+          if (!all.length) return;
+          return sb.from("ps_profiles").select(PF).in("user_id", all).then(function (pr) {
             var map = {};
             (pr.data || []).forEach(function (x) { map[x.user_id] = x; });
             setData(function (old2) {
               if (!old2) return old2;
               var copy = {}; for (var k in old2) copy[k] = old2[k];
+              copy.host = (ownerId && map[ownerId]) || null;
               copy.members = old2.members.map(function (m) {
                 var c2 = {}; for (var k2 in m) c2[k2] = m[k2];
                 c2.profile = map[m.user_id] || null; return c2;
@@ -1236,6 +1274,7 @@ function AdminApp(props) {
               return copy;
             });
           });
+        });
       });
   }, []);
 
@@ -1356,7 +1395,6 @@ function PlanEntry(props) {
 function NewPlanning(props) {
   var a = useState(""), title = a[0], setTitle = a[1];
   var b = useState(""), model = b[0], setModel = b[1];
-  var c = useState(""), date = c[0], setDate = c[1];
   var d = useState(false), busy = d[0], setBusy = d[1];
 
   function submit(ev) {
@@ -1366,7 +1404,7 @@ function NewPlanning(props) {
     sb.rpc("ps_generate_code").then(function (r) {
       return sb.from("ps_plannings").insert({
         owner_id: props.session.user.id, title: title.trim(),
-        model_name: model.trim() || null, shoot_date: date || null, access_code: r.data
+        model_name: model.trim() || null, access_code: r.data
       }).select().single();
     }).then(function (r) {
       setBusy(false);
@@ -1384,13 +1422,11 @@ function NewPlanning(props) {
         Field({ label: "Titel" },
           inp({ className: "inp", value: title, autoFocus: true, placeholder: "Herbstserie im Hafen",
             onChange: function (ev) { setTitle(ev.target.value); } })),
-        div({ className: "g2" },
-          Field({ label: "Model" },
-            inp({ className: "inp", value: model, placeholder: "Name",
-              onChange: function (ev) { setModel(ev.target.value); } })),
-          Field({ label: "Shootingtag" },
-            inp({ className: "inp", type: "date", value: date,
-              onChange: function (ev) { setDate(ev.target.value); } }))),
+        Field({ label: "Mit wem" },
+          inp({ className: "inp", value: model, placeholder: "Name, falls schon klar",
+            onChange: function (ev) { setModel(ev.target.value); } })),
+        div({ className: "hint" },
+          "Den Shootingtag trägst du nicht hier ein. Er entsteht unter „Termine“, sobald ihr euch einig seid — dann wird er automatisch gesetzt."),
         para({ className: "muted", style: { fontSize: 12.5 } },
           "Der Zugangscode für Gäste wird beim Anlegen automatisch erzeugt."),
         btn({ className: "btn btn-pri btn-wide", disabled: busy },
@@ -1413,9 +1449,11 @@ function PlanningView(props) {
   }
 
   var openProps = d ? d.proposals.filter(function (x) { return x.status === "offen"; }).length : 0;
+  var guestGenres = d ? (d.genres || []).filter(function (x) { return x.party === (owner ? "gast" : "inhaber"); }).length : 0;
   var tabs = [
     ["uebersicht", "Übersicht", 0],
     ["termine", "Termine", openProps],
+    ["bereiche", "Bereiche", guestGenres],
     ["moodboard", "Moodboard", d ? d.images.length : 0],
     ["ideen", "Ideen", d ? d.ideas.length : 0],
     ["shotlist", "Shotlist", d ? d.shots.length : 0],
@@ -1455,6 +1493,7 @@ function PlanningView(props) {
                                      clearSel: props.clearSel, toast: props.toast, myName: props.myName, myAvatar: props.myAvatar })
                      : h(ModelOverview, { p: p, bundle: d, name: props.myName }))
         : tab === "termine" ? h(Scheduling, withCtx({ availability: d.availability, proposals: d.proposals, reloadList: props.reloadList }))
+        : tab === "bereiche" ? h(Genres, withCtx({ genres: d.genres }))
         : tab === "moodboard" ? h(Moodboard, withCtx({ images: d.images }))
         : tab === "ideen" ? h(Ideas, withCtx({ ideas: d.ideas }))
         : tab === "shotlist" ? h(Shotlist, withCtx({ shots: d.shots }))
@@ -1552,6 +1591,8 @@ function Overview(props) {
           Field({ label: "Zeitfenster" }, inp({ className: "inp", value: form.shoot_time, placeholder: "17:30 – 19:15", onChange: function (ev) { set("shoot_time", ev.target.value); } }))),
         div({ style: { marginTop: 14 } },
           Field({ label: "Location" }, inp({ className: "inp", value: form.location, placeholder: "Alter Hafen, Kai 4", onChange: function (ev) { set("location", ev.target.value); } }))),
+        !form.shoot_date ? div({ className: "hint", style: { marginTop: 14 } },
+          "Noch kein Termin. Unter „Termine“ tragt ihr beide eure Verfügbarkeit ein; sobald du einen Vorschlag annimmst, füllen sich Tag und Zeitfenster von selbst.") : null,
         hr({ className: "sep" }),
         div({ className: "row", style: { justifyContent: "space-between" } },
           btn({ className: "btn btn-pri", onClick: save, disabled: busy }, busy ? span({ className: "spin" }) : null, "Änderungen speichern"),
@@ -2056,6 +2097,144 @@ function Chat(props) {
 }
 
 /* ============================================================
+   Bereiche
+   ============================================================ */
+var GENRE_GROUPS = [
+  ["Klassisch", [
+    ["portrait", "Portrait"], ["beauty", "Beauty & Make-up"], ["headshot", "Business / Headshot"],
+    ["fashion", "Fashion / Editorial"], ["lifestyle", "Lifestyle / Reportage"], ["sport", "Sport & Fitness"]
+  ]],
+  ["Körperbetont", [
+    ["bademode", "Bade- & Bikinimode"], ["dessous", "Dessous"], ["boudoir", "Boudoir"],
+    ["teilakt", "Teilakt / Implied"], ["akt", "Akt"], ["aktfineart", "Akt konzeptionell / Fine-Art"]
+  ]],
+  ["Anlässe & Konzepte", [
+    ["paar", "Paar-Shooting"], ["hochzeit", "Hochzeit"], ["schwangerschaft", "Schwangerschaft"],
+    ["cosplay", "Cosplay / Kostüm"], ["fineart", "Fine-Art / Konzeptionell"], ["werbung", "Werbung / kommerziell"]
+  ]]
+];
+var STANCE = [["ja", "Ja"], ["absprache", "Nach Absprache"], ["nein", "Nein"]];
+
+function Genres(props) {
+  var admin = !!props.admin, p = props.planning;
+  var rows = props.genres || [];
+  var party = admin ? "inhaber" : "gast";
+  var otherParty = admin ? "gast" : "inhaber";
+  var otherName = admin ? (p.model_name || "Die andere Seite") : "Inhaber:in";
+  var a = useState({}), notes = a[0], setNotes = a[1];
+  var b = useState(""), busyKey = b[0], setBusy = b[1];
+
+  var by = {};
+  rows.forEach(function (r) {
+    if (!by[r.genre]) by[r.genre] = {};
+    by[r.genre][r.party] = r;
+  });
+
+  function write(key, stance, note) {
+    setBusy(key);
+    var q = props.code
+      ? sb.rpc("ps_set_genre", { p_code: props.code, p_author: props.authorName, p_genre: key, p_stance: stance, p_note: note || null })
+      : sb.from("ps_genres").upsert({
+          planning_id: p.id, party: party, genre: key, stance: stance, note: note || null,
+          author_id: props.userId || null, author_name: props.authorName || null
+        }, { onConflict: "planning_id,party,genre" });
+    return Promise.resolve(q).then(function (r) {
+      setBusy("");
+      if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
+      props.reload();
+    });
+  }
+  function clear(key) {
+    setBusy(key);
+    var q = props.code
+      ? sb.rpc("ps_clear_genre", { p_code: props.code, p_genre: key })
+      : sb.from("ps_genres").delete().eq("planning_id", p.id).eq("party", party).eq("genre", key);
+    Promise.resolve(q).then(function () { setBusy(""); props.reload(); });
+  }
+  function setStance(key, st) {
+    var mine = (by[key] || {})[party];
+    if (mine && mine.stance === st) { clear(key); return; }
+    write(key, st, mine ? mine.note : null);
+  }
+  function saveNote(key) {
+    var mine = (by[key] || {})[party];
+    if (!mine) return;
+    var v = notes[key];
+    if (v === undefined || v === (mine.note || "")) return;
+    write(key, mine.stance, v);
+  }
+
+  /* Zusammenfassung */
+  var both = 0, clash = 0, open = 0, total = 0;
+  GENRE_GROUPS.forEach(function (g) {
+    g[1].forEach(function (it) {
+      total++;
+      var v = by[it[0]] || {};
+      var m = v[party], o = v[otherParty];
+      if (m && o) {
+        if (m.stance === "ja" && o.stance === "ja") both++;
+        else if ((m.stance === "nein") !== (o.stance === "nein")) clash++;
+      }
+      if (!m) open++;
+    });
+  });
+
+  return div({ className: "cards" },
+    Card({ title: "So funktioniert das" },
+      para({ style: { fontSize: 13.5, lineHeight: 1.6 } },
+        "Jede Seite trägt für sich ein, was für sie infrage kommt. Beide sehen beide Spalten. " +
+        "„Nach Absprache“ heißt: grundsätzlich denkbar, aber es gibt Bedingungen — schreib sie in die Notiz. " +
+        "Ein zweiter Klick auf dieselbe Antwort nimmt sie wieder zurück."),
+      div({ className: "row", style: { marginTop: 12, gap: 8 } },
+        span({ className: "st st-bestaetigt" }, ii(null), both + " × beide ja"),
+        clash ? span({ className: "st st-verworfen" }, ii(null), clash + " × eine Seite nein") : null,
+        open ? span({ className: "st st-idee" }, ii(null), open + " offen") : null)),
+
+    GENRE_GROUPS.map(function (grp) {
+      return Card({ key: grp[0], title: grp[0], flush: true },
+        div({ className: "rows" },
+          grp[1].map(function (it) {
+            var key = it[0], v = by[key] || {};
+            var mine = v[party], theirs = v[otherParty];
+            var cls = "grow";
+            if (mine && theirs) {
+              if (mine.stance === "ja" && theirs.stance === "ja") cls += " agree";
+              else if ((mine.stance === "nein") !== (theirs.stance === "nein")) cls += " conflict";
+            }
+            var noteVal = notes[key] !== undefined ? notes[key] : ((mine && mine.note) || "");
+            var showNote = mine && (mine.stance === "absprache" || (mine.note && mine.note.length));
+            return div({ key: key },
+              div({ className: cls },
+                div({ style: { minWidth: 0 } },
+                  div({ className: "gname" }, it[1]),
+                  div({ className: "gsub" },
+                    theirs
+                      ? span({ className: "st st-" + (theirs.stance === "ja" ? "bestaetigt" : theirs.stance === "nein" ? "verworfen" : "geplant") },
+                          ii(null), otherName + ": " + lbl(STANCE, theirs.stance))
+                      : span({ className: "lab" }, otherName + ": keine Angabe"),
+                    theirs && theirs.note ? span({ className: "muted", style: { fontSize: 12.5 } }, "„" + theirs.note + "“") : null)),
+                div({ className: "stance" },
+                  STANCE.map(function (s) {
+                    return btn({
+                      key: s[0], className: (mine && mine.stance === s[0] ? "on " + s[0] : ""),
+                      disabled: busyKey === key,
+                      onClick: function () { setStance(key, s[0]); }
+                    }, s[1]);
+                  }))),
+              showNote ? div({ className: "gnote" },
+                inp({
+                  className: "inp", value: noteVal, placeholder: "Bedingung oder Anmerkung — z. B. nur mit Begleitperson",
+                  onChange: function (ev) {
+                    var val = ev.target.value;
+                    setNotes(function (o) { var n = {}; for (var k in o) n[k] = o[k]; n[key] = val; return n; });
+                  },
+                  onBlur: function () { saveNote(key); }
+                })) : null);
+          })));
+    }));
+}
+
+/* ============================================================
    Terminfindung
    ============================================================ */
 var DOW = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -2411,9 +2590,11 @@ function ModelApp(props) {
 
   var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
   var openVotes = (bundle.proposals || []).filter(function (x) { return x.status === "offen" && !x.model_vote; }).length;
+  var hostGenres = (bundle.genres || []).filter(function (x) { return x.party === "inhaber"; }).length;
   var tabs = [
     ["uebersicht", "Übersicht", 0],
     ["termine", "Termine", openVotes],
+    ["bereiche", "Bereiche", hostGenres],
     ["moodboard", "Moodboard", bundle.images.length],
     ["ideen", "Ideen", bundle.ideas.length],
     ["shotlist", "Shotlist", bundle.shots.length],
@@ -2427,10 +2608,14 @@ function ModelApp(props) {
   return div(null,
     div({ className: "topbar" },
       div({ className: "topbar-in" },
-        div({ className: "mark not-m", style: { padding: 0 } },
-          div({ className: "glyph" }, ii(null), ii(null), ii(null), ii(null))),
+        bundle.host && bundle.host.avatar_url
+          ? Avatar({ url: bundle.host.avatar_url, name: bundle.host.display_name, size: 36 })
+          : div({ className: "mark not-m", style: { padding: 0 } },
+              div({ className: "glyph" }, ii(null), ii(null), ii(null), ii(null))),
         div({ className: "tb-title" },
-          div({ className: "crumb" }, countdown(p.shoot_date) + " · " + fmtShort(p.shoot_date)),
+          div({ className: "crumb" },
+            countdown(p.shoot_date) + " · " + fmtShort(p.shoot_date)
+            + (bundle.host && bundle.host.display_name ? " · von " + bundle.host.display_name : "")),
           h1({ className: "trunc" }, p.title)),
         div({ className: "tb-acts" },
           Status({ value: p.status }),
@@ -2444,6 +2629,7 @@ function ModelApp(props) {
     div({ className: "content" },
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
         : tab === "termine" ? h(Scheduling, { planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "bereiche" ? h(Genres, { planning: p, genres: bundle.genres, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "moodboard" ? h(Moodboard, { planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "ideen" ? h(Ideas, { planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
@@ -2452,13 +2638,46 @@ function ModelApp(props) {
         : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })));
 }
 
+function extUrl(v) {
+  var s = String(v || "").trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.charAt(0) === "@") return "https://instagram.com/" + s.slice(1);
+  return "https://" + s;
+}
+function extLabel(v) {
+  var s = String(v || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
+  return s.length > 32 ? s.slice(0, 31) + "…" : s;
+}
+
+function HostCard(props) {
+  var hst = props.host;
+  if (!hst || !hst.display_name) {
+    return Card({ title: props.title || "Ansprechpartner:in" },
+      para({ className: "dim", style: { fontSize: 13 } },
+        "Die Person, die diese Planung führt, hat ihr Profil noch nicht ausgefüllt."));
+  }
+  var sub = [hst.role_label, hst.city].filter(Boolean).join(" · ");
+  var ig = extUrl(hst.instagram), web = extUrl(hst.website);
+  return Card({ title: props.title || "Ansprechpartner:in" },
+    div({ className: "row", style: { gap: 14, alignItems: "center", flexWrap: "nowrap" } },
+      Avatar({ url: hst.avatar_url, name: hst.display_name, size: 72 }),
+      div({ style: { minWidth: 0 } },
+        h4({ style: { fontSize: 16 } }, hst.display_name),
+        sub ? para({ className: "muted", style: { fontSize: 13, marginTop: 2 } }, sub) : null)),
+    hst.bio ? para({ style: { fontSize: 13.5, lineHeight: 1.6, marginTop: 12 } }, hst.bio) : null,
+    (ig || web) ? div({ className: "row", style: { gap: 8, marginTop: 12 } },
+      ig ? h("a", { className: "btn btn-sm", href: ig, target: "_blank", rel: "noopener noreferrer" }, extLabel(hst.instagram)) : null,
+      web ? h("a", { className: "btn btn-sm", href: web, target: "_blank", rel: "noopener noreferrer" }, extLabel(hst.website)) : null) : null);
+}
+
 function ModelOverview(props) {
   var p = props.p, b = props.bundle;
   var mine = b.checklist.filter(function (x) { return x.assignee !== "fotograf"; });
   var done = mine.filter(function (x) { return x.done; }).length;
   return div({ className: "split" },
     div({ className: "cards" },
-      Card({ title: "Das Konzept", aside: span({ className: "lab" }, "von der Inhaber:in") },
+      Card({ title: "Das Konzept", aside: span({ className: "lab" }, b.host && b.host.display_name ? "von " + b.host.display_name : "von der Inhaber:in") },
         p.concept
           ? para({ className: "serif", style: { fontSize: 16.5, lineHeight: 1.68, maxWidth: "62ch", whiteSpace: "pre-wrap" } }, p.concept)
           : Empty({}, "Das Konzept wird noch geschrieben.")),
@@ -2469,6 +2688,7 @@ function ModelOverview(props) {
           div(null, dt({ className: "lab" }, "Meine Liste"), dd(null, "Abhaken, was du vorbereitet hast.")),
           div(null, dt({ className: "lab" }, "Absprachen"), dd(null, "Fragen stellen, alles an einem Ort statt verstreut im Chat."))))),
     div({ className: "cards" },
+      HostCard({ host: b.host, title: "Deine Ansprechpartner:in" }),
       Card({ title: "Termin" },
         dl({ className: "dl" },
           div(null, dt({ className: "lab" }, "Tag"), dd(null, fmtDate(p.shoot_date))),
