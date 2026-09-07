@@ -913,7 +913,14 @@ var SHOT_STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bes
 var IDEA_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["pose", "Pose"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["requisite", "Requisite"]];
 var IMG_CAT = [["moodboard", "Moodboard"], ["pose", "Pose"], ["outfit", "Outfit"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["ergebnis", "Ergebnis"]];
 var CHECK_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["equipment", "Equipment"], ["requisite", "Requisite"], ["organisation", "Organisation"]];
-var ASSIGNEE = [["fotograf", "Planungsverantwortlicher"], ["model", "Gast"], ["beide", "Gemeinsam"]];
+/* Zuordnung zeigt die echten Namen; das Rollenwort greift nur,
+   wenn wirklich kein Name hinterlegt ist. */
+var HOST_FALLBACK = "Gastgeber:in", GUEST_FALLBACK = "Gast";
+function assignees(hostName, guestName) {
+  return [["fotograf", hostName || HOST_FALLBACK],
+          ["model", guestName || GUEST_FALLBACK],
+          ["beide", "Gemeinsam"]];
+}
 var MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function lbl(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return v; }
@@ -1715,7 +1722,7 @@ function AdminApp(props) {
           members: s(8),
           genres: s(9)
         });
-        /* Profile nachladen: die Beteiligten und der Planungsverantwortliche der Planung */
+        /* Profile nachladen: die Beteiligten und der Gastgeber der Planung */
         var ids = s(8).map(function (m) { return m.user_id; });
         var PF = "user_id,display_name,role_label,avatar_url,city,instagram,website,bio";
         return sb.from("ps_plannings").select("owner_id").eq("id", id).maybeSingle().then(function (op) {
@@ -1940,8 +1947,16 @@ function PlanningView(props) {
   var p = props.planning, d = props.data;
   var owner = p.owner_id === props.userId;
   var openChecks = d ? d.checklist.filter(function (x) { return !x.done; }).length : 0;
+  /* Wer heißt wie — bevorzugt der eingetragene Name, sonst das Rollenwort */
+  var hostName = (d && d.host && d.host.display_name)
+    || (owner ? props.myName : "") || HOST_FALLBACK;
+  var guestName = p.model_name
+    || (d && d.members && d.members.length && d.members[0].profile && d.members[0].profile.display_name)
+    || (!owner ? props.myName : "") || GUEST_FALLBACK;
+
   /* Gemeinsame Angaben für alle Unterbereiche */
-  var ctx = { userId: props.userId, authorName: props.myName, reload: props.reloadDetail, toast: props.toast };
+  var ctx = { userId: props.userId, authorName: props.myName, reload: props.reloadDetail,
+              toast: props.toast, hostName: hostName, guestName: guestName };
   function withCtx(extra) {
     var o = { planning: p, admin: owner };
     for (var k in ctx) o[k] = ctx[k];
@@ -2200,7 +2215,7 @@ function Overview(props) {
             Avatar({ name: props.myName || "Du", url: props.myAvatar, size: 36 }),
             div({ style: { flex: 1, minWidth: 0 } },
               div({ className: "nm trunc" }, (props.myName || "Du") + " · du"),
-              div({ className: "rl" }, "Planungsverantwortlicher")),
+              div({ className: "rl" }, "Gastgeber:in")),
             span({ className: "st st-bestaetigt" }, ii(null), "alle Rechte")),
           (d.members || []).map(function (m) {
             var pf = m.profile || {};
@@ -2266,7 +2281,7 @@ function Moodboard(props) {
     };
     var q;
     if (admin) {
-      base.author_role = "admin"; base.author_name = props.authorName || "Planungsverantwortlicher"; base.author_id = props.userId || null;
+      base.author_role = "admin"; base.author_name = props.authorName || props.hostName || HOST_FALLBACK; base.author_id = props.userId || null;
       q = sb.from("ps_images").insert(base);
     } else if (code) {
       q = sb.rpc("ps_add_image", {
@@ -2351,7 +2366,7 @@ function Moodboard(props) {
                   ? btn({ className: "rm", title: "Entfernen", onClick: function () { remove(img); } }, "×") : null,
                 figcap({ className: "info" },
                   img.caption ? div({ className: "t" }, img.caption) : null,
-                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")))));
+                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? (props.hostName || HOST_FALLBACK) : (props.guestName || GUEST_FALLBACK))))));
             }))),
 
     lbIdx >= 0 ? h(Lightbox, {
@@ -2360,7 +2375,7 @@ function Moodboard(props) {
       items: shown.map(function (x) {
         return {
           url: x.url, caption: x.caption, category: x.category,
-          author: x.author_name || (x.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")
+          author: x.author_name || (x.author_role === "admin" ? (props.hostName || HOST_FALLBACK) : (props.guestName || GUEST_FALLBACK))
         };
       })
     }) : null);
@@ -2382,7 +2397,7 @@ function Ideas(props) {
     var base = { planning_id: p.id, title: title.trim(), description: desc || null, category: cat };
     var q;
     if (admin) {
-      base.author_role = "admin"; base.author_name = props.authorName || "Planungsverantwortlicher"; base.author_id = props.userId || null;
+      base.author_role = "admin"; base.author_name = props.authorName || props.hostName || HOST_FALLBACK; base.author_id = props.userId || null;
       q = sb.from("ps_ideas").insert(base);
     } else if (props.code) {
       q = sb.rpc("ps_add_idea", {
@@ -2407,7 +2422,7 @@ function Ideas(props) {
     Promise.resolve(q).then(props.reload);
   }
 
-  var filters = [["alle", "Alle"], ["model", "Von Gästen"], ["admin", "Vom Planungsverantwortlichen"], ["offen", "Noch offen"]];
+  var filters = [["alle", "Alle"], ["model", "Von " + (props.guestName || GUEST_FALLBACK)], ["admin", "Von " + (props.hostName || HOST_FALLBACK)], ["offen", "Noch offen"]];
   var shown = ideas.filter(function (x) {
     if (view === "model") return x.author_role === "model";
     if (view === "admin") return x.author_role === "admin";
@@ -2448,7 +2463,7 @@ function Ideas(props) {
                   x.description ? para({ className: "sub", style: { fontSize: "var(--fs-md)", color: "var(--ink-2)", marginTop: 4, whiteSpace: "pre-wrap" } }, x.description) : null,
                   div({ className: "tagrow" },
                     span({ className: "tag" }, lbl(IDEA_CAT, x.category)),
-                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")),
+                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? (props.hostName || HOST_FALLBACK) : (props.guestName || GUEST_FALLBACK))),
                     span({ className: "tag tnum" }, fmtTs(x.created_at)))),
                 div({ className: "row acts", style: { gap: 6, flexWrap: "nowrap" } },
                   admin ? sel({ className: "inp inp-sm", value: x.status, onChange: function (ev) { setStatus(x, ev.target.value); } },
@@ -2553,6 +2568,7 @@ function Shotlist(props) {
 /* ---------- Checkliste ---------- */
 function Checklist(props) {
   var admin = !!props.admin, p = props.planning, items = props.items;
+  var ASS = assignees(props.hostName, props.guestName);
   var a = useState(""), title = a[0], setTitle = a[1];
   var b = useState("beide"), who = b[0], setWho = b[1];
   var c = useState("allgemein"), cat = c[0], setCat = c[1];
@@ -2575,7 +2591,7 @@ function Checklist(props) {
         ? sb.rpc("ps_toggle_check", { p_code: props.code, p_item_id: it.id, p_done: !it.done })
         : sb.rpc("ps_member_toggle_check", { p_item_id: it.id, p_done: !it.done });
     Promise.resolve(q).then(function (r) {
-      if (r && r.error) { props.toast("Diesen Punkt kann nur der Planungsverantwortliche abhaken."); return; }
+      if (r && r.error) { props.toast("Diesen Punkt kann nur " + (props.hostName || HOST_FALLBACK) + " abhaken."); return; }
       props.reload();
     });
   }
@@ -2589,13 +2605,13 @@ function Checklist(props) {
             inp({ className: "inp", value: title, placeholder: "Zwei Ersatzakkus laden", onChange: function (ev) { setTitle(ev.target.value); } }))),
         Field({ label: "Wer" },
           sel({ className: "inp", value: who, onChange: function (ev) { setWho(ev.target.value); } },
-            ASSIGNEE.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
+            ASS.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
         Field({ label: "Bereich" },
           sel({ className: "inp", value: cat, onChange: function (ev) { setCat(ev.target.value); } },
             CHECK_CAT.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
         btn({ className: "btn btn-pri" }, "Hinzufügen"))) : null,
 
-    ASSIGNEE.map(function (grp) {
+    ASS.map(function (grp) {
       var list = items.filter(function (x) { return x.assignee === grp[0]; });
       if (!list.length) return null;
       var done = list.filter(function (x) { return x.done; }).length;
@@ -2688,7 +2704,7 @@ function Chat(props) {
     var q;
     if (admin) {
       q = sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(),
-        author_role: "admin", author_name: props.authorName || "Planungsverantwortlicher", author_id: props.userId || null });
+        author_role: "admin", author_name: props.authorName || props.hostName || HOST_FALLBACK, author_id: props.userId || null });
     } else if (props.code) {
       q = sb.rpc("ps_add_comment", { p_code: props.code, p_author: props.authorName, p_body: body.trim(), p_idea_id: null });
     } else {
@@ -2715,7 +2731,7 @@ function Chat(props) {
         ? Empty({}, "Noch nichts besprochen. Schreib die erste Nachricht.")
         : props.comments.map(function (cm) {
             return div({ key: cm.id, className: "bubble" + (cm.author_role === mine ? " self" : "") },
-              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")), " · " + fmtTs(cm.created_at)),
+              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? (props.hostName || HOST_FALLBACK) : (props.guestName || GUEST_FALLBACK))), " · " + fmtTs(cm.created_at)),
               div({ className: "txt" }, cm.body));
           }),
       div({ ref: endRef })),
@@ -3139,7 +3155,7 @@ function Genres(props) {
   var rows = props.genres || [];
   var party = admin ? "inhaber" : "gast";
   var otherParty = admin ? "gast" : "inhaber";
-  var otherName = admin ? (p.model_name || "Die andere Seite") : "Planungsverantwortlicher";
+  var otherName = admin ? (props.guestName || GUEST_FALLBACK) : (props.hostName || HOST_FALLBACK);
   var a = useState({}), notes = a[0], setNotes = a[1];
   var b = useState(""), busyKey = b[0], setBusy = b[1];
 
@@ -3292,7 +3308,7 @@ function Scheduling(props) {
   var avail = props.availability || [], props_ = props.proposals || [];
   var party = admin ? "fotograf" : "model";
   var other = admin ? "model" : "fotograf";
-  var otherName = admin ? (p.model_name || "Die andere Seite") : "Planungsverantwortlicher";
+  var otherName = admin ? (props.guestName || GUEST_FALLBACK) : (props.hostName || HOST_FALLBACK);
 
   var start = p.shoot_date ? new Date(p.shoot_date + "T00:00:00") : new Date();
   var a = useState({ y: start.getFullYear(), m: start.getMonth() }), cur = a[0], setCur = a[1];
@@ -3334,7 +3350,7 @@ function Scheduling(props) {
       q = sb.from("ps_availability").upsert({
         planning_id: p.id, cal_day: selDay, party: party, state: f.state,
         time_from: f.from || null, time_to: f.to || null, note: f.note || null,
-        author_name: props.authorName || (admin ? "Planungsverantwortlicher" : "Gast"), author_id: props.userId || null
+        author_name: props.authorName || (admin ? (props.hostName || HOST_FALLBACK) : (props.guestName || GUEST_FALLBACK)), author_id: props.userId || null
       }, { onConflict: "planning_id,party,cal_day" });
     }
     Promise.resolve(q).then(function (r) {
@@ -3450,15 +3466,15 @@ function Scheduling(props) {
             iso === p.shoot_date ? span({ className: "shoot", title: "Shootingtag" }) : null,
             span({ className: "n" }, dt.getDate()),
             div({ className: "cal-bars" },
-              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Planungsverantwortlicher" }),
-              ii({ className: v.model ? v.model.state : "", title: "Gast" })));
+              ii({ className: v.fotograf ? v.fotograf.state : "", title: props.hostName || HOST_FALLBACK }),
+              ii({ className: v.model ? v.model.state : "", title: props.guestName || GUEST_FALLBACK })));
         })),
 
       div({ className: "legend" },
         span(null, ii({ style: { background: "var(--ok)" } }), "Passt"),
         span(null, ii({ style: { background: "var(--warn)" } }), "Vielleicht"),
         span(null, ii({ style: { background: "var(--crit)" } }), "Passt nicht"),
-        span(null, span({ className: "dim" }, "Obere Leiste: Planungsverantwortlicher · untere: Gast"))),
+        span(null, span({ className: "dim" }, "Obere Leiste: " + (props.hostName || HOST_FALLBACK) + " · untere: " + (props.guestName || GUEST_FALLBACK)))),
 
       /* ---------- Tageseditor ---------- */
       selDay ? div({ className: "daybox" },
@@ -3644,7 +3660,10 @@ function ModelApp(props) {
     ["absprachen", "Absprachen", bundle.comments.length, "absprachen"]
   ].filter(function (t) { return !t[3] || shown(t[3]); });
 
-  var shared = { planning: p, code: code, reload: reload, toast: props.toast, authorName: name };
+  var hostName = (bundle.host && bundle.host.display_name) || HOST_FALLBACK;
+  var guestName = name || p.model_name || GUEST_FALLBACK;
+  var shared = { planning: p, code: code, reload: reload, toast: props.toast, authorName: name,
+                 hostName: hostName, guestName: guestName };
 
   return div(null,
     div({ className: "topbar" },
@@ -3669,15 +3688,15 @@ function ModelApp(props) {
       })),
     div({ className: "content" },
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
-        : tab === "termine" ? h(Scheduling, { planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
-        : tab === "bereiche" ? h(Genres, { planning: p, genres: bundle.genres, code: code, reload: reload, toast: props.toast, authorName: name })
-        : tab === "anfahrt" ? h(MapView, { planning: p, code: code, reload: reload, toast: props.toast })
-        : tab === "moodboard" ? h(Moodboard, { planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
-        : tab === "ideen" ? h(Ideas, { planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
-        : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
-        : tab === "checkliste" ? h(Checklist, { planning: p, items: bundle.checklist, code: code, reload: reload, toast: props.toast })
-        : tab === "zeitplan" ? h(Schedule, { planning: p, rows: bundle.schedule, reload: reload, toast: props.toast })
-        : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })),
+        : tab === "termine" ? h(Scheduling, { hostName: hostName, guestName: guestName, planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "bereiche" ? h(Genres, { hostName: hostName, guestName: guestName, planning: p, genres: bundle.genres, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "anfahrt" ? h(MapView, { hostName: hostName, guestName: guestName, planning: p, code: code, reload: reload, toast: props.toast })
+        : tab === "moodboard" ? h(Moodboard, { hostName: hostName, guestName: guestName, planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "ideen" ? h(Ideas, { hostName: hostName, guestName: guestName, planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "shotlist" ? h(Shotlist, { hostName: hostName, guestName: guestName, planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
+        : tab === "checkliste" ? h(Checklist, { hostName: hostName, guestName: guestName, planning: p, items: bundle.checklist, code: code, reload: reload, toast: props.toast })
+        : tab === "zeitplan" ? h(Schedule, { hostName: hostName, guestName: guestName, planning: p, rows: bundle.schedule, reload: reload, toast: props.toast })
+        : h(Chat, { hostName: hostName, guestName: guestName, planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })),
     h(SiteFoot, { onPage: props.onLegal }));
 }
 
@@ -3722,7 +3741,7 @@ function ModelOverview(props) {
   var done = mine.filter(function (x) { return x.done; }).length;
   return div({ className: "split" },
     div({ className: "cards" },
-      Card({ title: "Das Konzept", aside: span({ className: "lab" }, b.host && b.host.display_name ? "von " + b.host.display_name : "vom Planungsverantwortlichen") },
+      Card({ title: "Das Konzept", aside: span({ className: "lab" }, b.host && b.host.display_name ? "von " + b.host.display_name : "von der Gastgeber:in") },
         p.concept
           ? para({ className: "serif", style: { fontSize: "var(--fs-xl)", lineHeight: 1.68, maxWidth: "62ch", whiteSpace: "pre-wrap" } }, p.concept)
           : Empty({}, "Das Konzept wird noch geschrieben.")),
