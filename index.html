@@ -1284,6 +1284,41 @@ function AdminApp(props) {
   }, []);
   useEffect(function () { loadDetail(sel); }, [sel]);
 
+  /* Änderungen der anderen Seite sollen ankommen, ohne dass man neu lädt.
+     Realtime meldet sie sofort; das Nachladen im Takt und beim Zurückkommen
+     ist das Netz für den Fall, dass die Verbindung mal weg war. */
+  useEffect(function () {
+    if (!sel) return;
+    var pending = null, alive = true;
+    function refresh() {
+      if (!alive || document.hidden) return;
+      clearTimeout(pending);
+      pending = setTimeout(function () { loadDetail(sel); }, 250);
+    }
+    var channel = sb.channel("planung-" + sel);
+    ["ps_comments", "ps_ideas", "ps_images", "ps_checklist", "ps_shots",
+     "ps_schedule", "ps_availability", "ps_proposals", "ps_genres"].forEach(function (t) {
+      channel.on("postgres_changes",
+        { event: "*", schema: "public", table: t, filter: "planning_id=eq." + sel }, refresh);
+    });
+    channel.on("postgres_changes",
+      { event: "UPDATE", schema: "public", table: "ps_plannings", filter: "id=eq." + sel },
+      function () { refresh(); loadList(); });
+    channel.subscribe();
+
+    function onWake() { if (!document.hidden) loadDetail(sel); }
+    var beat = setInterval(function () { if (!document.hidden) loadDetail(sel); }, 25000);
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+
+    return function () {
+      alive = false; clearTimeout(pending); clearInterval(beat);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+      sb.removeChannel(channel);
+    };
+  }, [sel, loadDetail, loadList]);
+
   var planning = null;
   for (var i = 0; i < plans.length; i++) if (plans[i].id === sel) planning = plans[i];
 
@@ -2051,7 +2086,17 @@ function Chat(props) {
   var a = useState(""), body = a[0], setBody = a[1];
   var b = useState(false), busy = b[0], setBusy = b[1];
   var endRef = useRef(null);
-  useEffect(function () { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [props.comments.length]);
+  /* Nur ans Ende springen, wenn man ohnehin unten steht — sonst reisst
+     eine eintreffende Nachricht einen aus dem Lesen. */
+  var stick = useRef(true);
+  function onScroll(ev) {
+    var el = ev.currentTarget;
+    stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  }
+  useEffect(function () {
+    if (stick.current && endRef.current && endRef.current.scrollIntoView)
+      endRef.current.scrollIntoView({ block: "nearest" });
+  }, [props.comments.length]);
 
   function send(ev) {
     if (ev && ev.preventDefault) ev.preventDefault();
@@ -2076,8 +2121,13 @@ function Chat(props) {
 
   var mine = admin ? "admin" : "model";
 
-  return Card({ title: "Absprachen", flush: true, aside: span({ className: "lab tnum" }, props.comments.length + " Nachrichten") },
-    div({ className: "thread" },
+  return Card({
+    title: "Absprachen", flush: true,
+    aside: div({ className: "row", style: { gap: 8, alignItems: "center" } },
+      span({ className: "lab tnum" }, props.comments.length + " Nachrichten"),
+      btn({ className: "btn btn-quiet btn-sm", onClick: function () { props.reload(); }, title: "Jetzt nachladen" }, "Aktualisieren"))
+  },
+    div({ className: "thread", onScroll: onScroll },
       props.comments.length === 0
         ? Empty({}, "Noch nichts besprochen. Schreib die erste Nachricht.")
         : props.comments.map(function (cm) {
@@ -2562,11 +2612,19 @@ function ModelApp(props) {
     return sb.rpc("ps_load", { p_code: code }).then(function (r) { if (!r.error && r.data) setBundle(r.data); });
   }, [code]);
 
+  /* Ohne Konto greift kein Realtime — die Zeilenrechte lassen anonyme
+     Verbindungen nicht mit. Also regelmäßig nachladen, aber nur solange
+     das Fenster wirklich sichtbar ist. */
   useEffect(function () {
-    function onFocus() { reload(); }
-    window.addEventListener("focus", onFocus);
-    var iv = setInterval(reload, 30000);
-    return function () { window.removeEventListener("focus", onFocus); clearInterval(iv); };
+    function onWake() { if (!document.hidden) reload(); }
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    var iv = setInterval(function () { if (!document.hidden) reload(); }, 12000);
+    return function () {
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+      clearInterval(iv);
+    };
   }, [reload]);
 
   var p = bundle.planning;
