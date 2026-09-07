@@ -382,6 +382,92 @@ select.inp{appearance:none; padding-right:26px;
   text-transform:uppercase; padding:14px 8px 14px 16px;
 }
 
+/* ============================================================
+   Terminfindung
+   ============================================================ */
+.cal-head{display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line)}
+.cal-head .mo{font-weight:600; font-size:14.5px; flex:1; letter-spacing:-.01em}
+.cal-nav{display:flex; gap:4px}
+.cal-nav button{
+  width:32px; height:32px; border:1px solid var(--line-2); background:var(--surface);
+  border-radius:var(--r-sm); cursor:pointer; color:var(--ink-2); line-height:1; font-size:15px;
+}
+.cal-nav button:hover{background:var(--sunken); color:var(--ink)}
+
+.cal-dow{display:grid; grid-template-columns:repeat(7,1fr); padding:8px 10px 2px; gap:4px}
+.cal-dow span{
+  text-align:center; font-family:"DM Mono",monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:2px 10px 12px}
+.cal-cell{
+  position:relative; aspect-ratio:1/1; min-height:44px; border:1px solid var(--line);
+  background:var(--surface); border-radius:var(--r-sm); cursor:pointer; padding:4px 3px 3px;
+  display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--ink);
+}
+.cal-cell:hover{border-color:var(--line-3); background:var(--sunken)}
+.cal-cell.void{visibility:hidden; cursor:default}
+.cal-cell.past{opacity:.42}
+.cal-cell.today{border-color:var(--ink-3)}
+.cal-cell.on{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-tint)}
+.cal-cell.match{background:var(--accent-tint); border-color:var(--accent)}
+.cal-cell .n{font-family:"DM Mono",monospace; font-size:12.5px; font-variant-numeric:tabular-nums; line-height:1.1}
+.cal-cell.today .n{font-weight:500; text-decoration:underline; text-underline-offset:2px}
+.cal-bars{display:flex; flex-direction:column; gap:2px; width:100%; margin-top:auto}
+.cal-bars i{display:block; height:3px; border-radius:2px; background:var(--line)}
+.cal-bars i.ja{background:var(--ok)}
+.cal-bars i.vielleicht{background:var(--warn)}
+.cal-bars i.nein{background:var(--crit)}
+.cal-cell .shoot{position:absolute; top:3px; right:4px; width:5px; height:5px; border-radius:50%; background:var(--accent)}
+
+.legend{display:flex; gap:14px; flex-wrap:wrap; padding:0 16px 14px; font-size:12px; color:var(--ink-2)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:14px; height:3px; border-radius:2px; display:block}
+
+.daybox{border-top:1px solid var(--line); padding:14px 16px; display:flex; flex-direction:column; gap:12px}
+.states{display:flex; gap:6px; flex-wrap:wrap}
+.state-btn{
+  flex:1; min-width:96px; border:1px solid var(--line-2); background:var(--surface);
+  padding:9px 10px; border-radius:var(--r-sm); cursor:pointer; font-size:13px; font-weight:500;
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+}
+.state-btn i{width:8px; height:8px; border-radius:50%; background:var(--line-3); flex:none}
+.state-btn.ja i{background:var(--ok)}
+.state-btn.vielleicht i{background:var(--warn)}
+.state-btn.nein i{background:var(--crit)}
+.state-btn.on{border-color:var(--ink); background:var(--ink); color:var(--bg)}
+.presets{display:flex; gap:6px; flex-wrap:wrap}
+.other{border:1px solid var(--line); border-radius:var(--r-sm); background:var(--sunken); padding:10px 12px; font-size:13px}
+
+.match-row{display:flex; gap:12px; align-items:center; padding:11px 16px; flex-wrap:wrap}
+.match-row .d{font-family:"DM Mono",monospace; font-size:12.5px; font-variant-numeric:tabular-nums; min-width:104px}
+.prop{display:flex; gap:12px; padding:12px 16px; align-items:flex-start; flex-wrap:wrap}
+.prop .when{min-width:150px}
+.prop .when b{display:block; font-size:13.5px; font-weight:600}
+.prop .when span{font-family:"DM Mono",monospace; font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.vote{display:flex; gap:6px}
+.vote button{
+  border:1px solid var(--line-2); background:var(--surface); border-radius:var(--r-sm);
+  padding:6px 12px; cursor:pointer; font-size:12.5px; min-height:34px;
+}
+.vote button.on.ja{background:var(--ok-tint); border-color:var(--ok); color:var(--ok)}
+.vote button.on.vielleicht{background:var(--warn-tint); border-color:var(--warn); color:var(--warn)}
+.vote button.on.nein{background:var(--crit-tint); border-color:var(--crit); color:var(--crit)}
+
+@media (max-width:640px){
+  .cal-head{padding:11px 14px}
+  .cal-dow{padding:8px 8px 2px; gap:3px}
+  .cal-grid{gap:3px; padding:2px 8px 12px}
+  .cal-cell{min-height:40px; padding:3px 2px}
+  .cal-cell .n{font-size:12px}
+  .daybox{padding:14px}
+  .state-btn{min-height:44px; min-width:0; flex:1 1 30%}
+  .legend{padding:0 14px 12px; gap:10px; font-size:11.5px}
+  .match-row,.prop{padding:12px 14px}
+  .vote{width:100%}
+  .vote button{flex:1; min-height:40px}
+}
+
 /* Sonstiges */
 .spin{display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -622,15 +708,116 @@ function copyText(t, done) {
     document.body.removeChild(ta); done(ok);
   } catch (e2) { done(false); }
 }
-function uploadFile(file, code) {
-  var ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "" + Math.random().toString(16).slice(2));
-  var path = code + "/" + id + "." + ext;
-  return sb.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false })
-    .then(function (r) {
-      if (r.error) throw r.error;
-      return { path: path, url: sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
-    });
+/* Handyfotos sind schnell 6 MB gross. Vor dem Upload auf 2000 px lange Kante
+   und JPEG 82 % bringen — spart Speicher und laedt im Moodboard viel schneller. */
+var MAX_EDGE = 2000;
+function compressImage(file) {
+  if (!file || !/^image\/(jpeg|jpg|png|webp)$/i.test(file.type || "")) return Promise.resolve(file);
+  if (file.size < 500 * 1024) return Promise.resolve(file);
+  return new Promise(function (resolve) {
+    var url, img = new Image();
+    function give(f) { try { URL.revokeObjectURL(url); } catch (e) {} resolve(f); }
+    img.onload = function () {
+      try {
+        var w = img.naturalWidth, hh = img.naturalHeight;
+        if (!w || !hh) return give(file);
+        var scale = Math.min(1, MAX_EDGE / Math.max(w, hh));
+        if (scale === 1 && file.size < 2 * 1024 * 1024) return give(file);
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * scale));
+        c.height = Math.max(1, Math.round(hh * scale));
+        var ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (blob) {
+          if (!blob || blob.size >= file.size) return give(file);
+          var name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+          var out;
+          try { out = new File([blob], name, { type: "image/jpeg" }); }
+          catch (e) { out = blob; out.name = name; }
+          give(out);
+        }, "image/jpeg", 0.82);
+      } catch (e) { give(file); }
+    };
+    img.onerror = function () { give(file); };
+    try { url = URL.createObjectURL(file); img.src = url; }
+    catch (e) { resolve(file); }
+  });
+}
+
+function uploadFile(file, folder) {
+  return compressImage(file).then(function (f) {
+    var nm = f.name || file.name || "bild.jpg";
+    var ext = (nm.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "" + Math.random().toString(16).slice(2));
+    var path = folder + "/" + id + "." + ext;
+    return sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || file.type, upsert: false })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return { path: path, url: sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
+      });
+  });
+}
+
+/* Alle Dateien einer Planung einsammeln — sowohl im ID-Ordner als auch im
+   alten Ordner mit dem Zugangscode. */
+function listPlanningFiles(planning) {
+  var folders = [planning.id, planning.access_code];
+  return Promise.all(folders.map(function (f) {
+    return sb.storage.from(BUCKET).list(f, { limit: 1000 }).then(function (r) {
+      return (r.data || []).map(function (o) { return f + "/" + o.name; });
+    }, function () { return []; });
+  })).then(function (lists) { return [].concat.apply([], lists); });
+}
+
+/* Termin als Kalenderdatei */
+function icsEscape(s) {
+  return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function buildIcs(p) {
+  var d = (p.shoot_date || "").replace(/-/g, "");
+  if (!d) return null;
+  var times = String(p.shoot_time || "").match(/\d{1,2}[:.]\d{2}/g) || [];
+  function hm(t) { var x = t.split(/[:.]/); return String(x[0]).padStart(2, "0") + x[1] + "00"; }
+  var start, end;
+  if (times.length) {
+    start = "DTSTART:" + d + "T" + hm(times[0]);
+    if (times.length > 1) end = "DTEND:" + d + "T" + hm(times[1]);
+    else {
+      var s = times[0].split(/[:.]/);
+      var eh = (parseInt(s[0], 10) + 2) % 24;
+      end = "DTEND:" + d + "T" + String(eh).padStart(2, "0") + s[1] + "00";
+    }
+  } else {
+    var next = new Date(p.shoot_date + "T00:00:00"); next.setDate(next.getDate() + 1);
+    start = "DTSTART;VALUE=DATE:" + d;
+    end = "DTEND;VALUE=DATE:" + next.toISOString().slice(0, 10).replace(/-/g, "");
+  }
+  var desc = [];
+  if (p.model_name) desc.push("Model: " + p.model_name);
+  if (p.access_code) desc.push("Zugangscode: " + p.access_code);
+  if (p.concept) desc.push("", p.concept);
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontaktbogen//Shooting//DE", "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    "UID:shooting-" + p.id + "@kontaktbogen",
+    "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z",
+    start, end,
+    "SUMMARY:" + icsEscape("Shooting · " + p.title),
+    "LOCATION:" + icsEscape(p.location || ""),
+    "DESCRIPTION:" + icsEscape(desc.join("\n")),
+    "END:VEVENT", "END:VCALENDAR"
+  ].join("\r\n");
+}
+function downloadText(name, mime, text) {
+  try {
+    var blob = new Blob([text], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; a.style.display = "none";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { try { URL.revokeObjectURL(url); a.parentNode.removeChild(a); } catch (e) {} }, 1500);
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ============================================================
@@ -733,6 +920,16 @@ function Entrance(props) {
         ? "E-Mail-Adresse oder Passwort stimmt nicht." : r.error.message);
     });
   }
+  function reset() {
+    if (!email.trim()) { setErr("Trag zuerst deine E-Mail-Adresse ein, dann schicke ich dir einen Link."); return; }
+    setBusy(true); setErr(""); setInfo("");
+    sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.origin + location.pathname })
+      .then(function (r) {
+        setBusy(false);
+        if (r.error) { setErr(r.error.message); return; }
+        setInfo("Wenn es zu dieser Adresse ein Konto gibt, ist ein Link zum Zurücksetzen unterwegs. Öffne ihn auf diesem Gerät.");
+      });
+  }
   function signup() {
     if (!email.trim() || pw.length < 6) { setErr("E-Mail eintragen und ein Passwort mit mindestens sechs Zeichen wählen."); return; }
     setBusy(true); setErr(""); setInfo("");
@@ -786,8 +983,11 @@ function Entrance(props) {
                 onChange: function (ev) { setPw(ev.target.value); } })),
             btn({ className: "btn btn-pri btn-wide", disabled: busy },
               busy ? span({ className: "spin" }) : null, "Anmelden"),
-            btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: signup, disabled: busy },
-              "Neues Konto anlegen")),
+            div({ className: "row", style: { gap: 6 } },
+              btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: signup, disabled: busy },
+                "Neues Konto anlegen"),
+              btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: reset, disabled: busy },
+                "Passwort vergessen"))),
 
       err ? div({ className: "hint bad" }, err) : null,
       info ? div({ className: "hint" }, info) : null,
@@ -819,7 +1019,7 @@ function AdminApp(props) {
 
   var loadDetail = useCallback(function (id) {
     if (!id) { setData(null); return Promise.resolve(); }
-    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule"];
+    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule", "ps_availability", "ps_proposals"];
     return Promise.all(names.map(function (n) { return sb.from(n).select("*").eq("planning_id", id); }))
       .then(function (res) {
         function s(i) { return res[i].data || []; }
@@ -831,7 +1031,9 @@ function AdminApp(props) {
           comments: s(2).sort(byTime),
           checklist: s(3).sort(byPos),
           shots: s(4).sort(byPos),
-          schedule: s(5).sort(function (x, y) { return String(x.time_from || "").localeCompare(String(y.time_from || "")) || byPos(x, y); })
+          schedule: s(5).sort(function (x, y) { return String(x.time_from || "").localeCompare(String(y.time_from || "")) || byPos(x, y); }),
+          availability: s(6).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)); }),
+          proposals: s(7).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)) || String(x.time_from).localeCompare(String(y.time_from)); })
         });
       });
   }, []);
@@ -973,8 +1175,10 @@ function PlanningView(props) {
   var p = props.planning, d = props.data;
   var openChecks = d ? d.checklist.filter(function (x) { return !x.done; }).length : 0;
 
+  var openProps = d ? d.proposals.filter(function (x) { return x.status === "offen"; }).length : 0;
   var tabs = [
     ["uebersicht", "Übersicht", 0],
+    ["termine", "Termine", openProps],
     ["moodboard", "Moodboard", d ? d.images.length : 0],
     ["ideen", "Ideen", d ? d.ideas.length : 0],
     ["shotlist", "Shotlist", d ? d.shots.length : 0],
@@ -1009,6 +1213,7 @@ function PlanningView(props) {
     div({ className: "content" },
       !d ? Empty({}, "Lade Planungsdaten …")
         : tab === "uebersicht" ? h(Overview, { planning: p, data: d, reloadList: props.reloadList, clearSel: props.clearSel, toast: props.toast })
+        : tab === "termine" ? h(Scheduling, { planning: p, availability: d.availability, proposals: d.proposals, admin: true, reload: props.reloadDetail, reloadList: props.reloadList, toast: props.toast })
         : tab === "moodboard" ? h(Moodboard, { planning: p, images: d.images, admin: true, reload: props.reloadDetail, toast: props.toast })
         : tab === "ideen" ? h(Ideas, { planning: p, ideas: d.ideas, admin: true, reload: props.reloadDetail, toast: props.toast })
         : tab === "shotlist" ? h(Shotlist, { planning: p, shots: d.shots, admin: true, reload: props.reloadDetail, toast: props.toast })
@@ -1060,10 +1265,23 @@ function Overview(props) {
   }
   function del() {
     if (!confirm("Planung „" + p.title + "“ mit allen Ideen, Bildern und Absprachen löschen?")) return;
-    sb.from("ps_plannings").delete().eq("id", p.id).then(function (r) {
-      if (r.error) props.toast("Fehler: " + r.error.message);
-      else { props.clearSel(); props.reloadList(); props.toast("Planung gelöscht"); }
-    });
+    /* Erst die Dateien im Speicher, dann die Datenbankzeile — sonst bleiben
+       die Bilder als Karteileichen im Bucket liegen. */
+    listPlanningFiles(p).then(function (paths) {
+      return paths.length ? sb.storage.from(BUCKET).remove(paths) : null;
+    }).then(function () {
+      return sb.from("ps_plannings").delete().eq("id", p.id);
+    }).then(function (r) {
+      if (r && r.error) props.toast("Fehler: " + r.error.message);
+      else { props.clearSel(); props.reloadList(); props.toast("Planung und Bilder gelöscht"); }
+    }, function (e) { props.toast("Fehler: " + (e.message || e)); });
+  }
+  function addToCalendar() {
+    var ics = buildIcs(p);
+    if (!ics) { props.toast("Trag zuerst einen Shootingtag ein."); return; }
+    var slug = p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "shooting";
+    if (!downloadText(slug + ".ics", "text/calendar;charset=utf-8", ics))
+      props.toast("Download wurde vom Browser blockiert.");
   }
   function copy(t, what) {
     copyText(t, function (ok) { props.toast(ok ? what + " kopiert" : "Kopieren blockiert: " + t); });
@@ -1122,7 +1340,7 @@ function Overview(props) {
           Meter({ label: "Shots bestätigt", value: shotsFix, total: d.shots.length }),
           Meter({ label: "Ideen aufgenommen", value: d.ideas.filter(function (x) { return x.status !== "idee" && x.status !== "verworfen"; }).length, total: d.ideas.length }))),
 
-      Card({ title: "Auf einen Blick" },
+      Card({ title: "Auf einen Blick", aside: btn({ className: "btn btn-quiet btn-sm", onClick: addToCalendar }, "In den Kalender") },
         dl({ className: "dl" },
           div(null, dt({ className: "lab" }, "Termin"), dd(null, fmtDate(p.shoot_date))),
           div(null, dt({ className: "lab" }, "Zeit"), dd(null, p.shoot_time || "—")),
@@ -1142,6 +1360,7 @@ function Moodboard(props) {
   var e = useState("alle"), filter = e[0], setFilter = e[1];
   var fileRef = useRef(null);
   var code = props.code || p.access_code;
+  var folder = p.id; /* Ordner im Speicher = Planungs-ID, überlebt einen Codewechsel */
 
   var shown = filter === "alle" ? images : images.filter(function (x) { return x.category === filter; });
 
@@ -1162,10 +1381,11 @@ function Moodboard(props) {
     var files = [].slice.call(list, 0, 20);
     var chain = Promise.resolve();
     files.forEach(function (file) {
-      chain = chain.then(function () { return uploadFile(file, code); }).then(record);
+      chain = chain.then(function () { return uploadFile(file, folder); }).then(record);
     });
     chain.then(function () {
-      setBusy(false); setCaption(""); props.reload(); props.toast(files.length + " Bild(er) hinzugefügt");
+      setBusy(false); setCaption(""); props.reload();
+      props.toast(files.length === 1 ? "Bild hinzugefügt" : files.length + " Bilder hinzugefügt");
       if (fileRef.current) fileRef.current.value = "";
     }, function (err) {
       setBusy(false); props.toast("Upload fehlgeschlagen: " + (err.message || err));
@@ -1541,6 +1761,314 @@ function Chat(props) {
 }
 
 /* ============================================================
+   Terminfindung
+   ============================================================ */
+var DOW = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+var MONTHS_LONG = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+var PRESETS = [["Vormittag", "09:00", "12:00"], ["Nachmittag", "14:00", "17:00"], ["Abendlicht", "17:00", "20:00"], ["Abend", "18:00", "21:00"]];
+var STATE_LABEL = { ja: "Passt", vielleicht: "Vielleicht", nein: "Passt nicht" };
+
+function isoDay(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function monthCells(y, m) {
+  var lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  var len = new Date(y, m + 1, 0).getDate();
+  var out = [], i;
+  for (i = 0; i < lead; i++) out.push(null);
+  for (i = 1; i <= len; i++) out.push(new Date(y, m, i));
+  while (out.length % 7) out.push(null);
+  return out;
+}
+function toMin(t) { var m = String(t || "").match(/(\d{1,2})[:.](\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+function fromMin(v) { return String(Math.floor(v / 60)).padStart(2, "0") + ":" + String(v % 60).padStart(2, "0"); }
+function windowOverlap(a, b) {
+  var af = toMin(a.time_from), at = toMin(a.time_to), bf = toMin(b.time_from), bt = toMin(b.time_to);
+  if (af === null || at === null) { af = 0; at = 1440; }
+  if (bf === null || bt === null) { bf = 0; bt = 1440; }
+  var s = Math.max(af, bf), e = Math.min(at, bt);
+  return e > s ? { from: fromMin(s), to: fromMin(e) } : null;
+}
+function dayLong(iso) {
+  var d = new Date(iso + "T00:00:00");
+  return DOW[(d.getDay() + 6) % 7] + ", " + d.getDate() + ". " + MONTHS_LONG[d.getMonth()] + " " + d.getFullYear();
+}
+
+function Scheduling(props) {
+  var admin = !!props.admin, p = props.planning;
+  var avail = props.availability || [], props_ = props.proposals || [];
+  var party = admin ? "fotograf" : "model";
+  var other = admin ? "model" : "fotograf";
+  var otherName = admin ? (p.model_name || "Model") : "Fotograf:in";
+
+  var start = p.shoot_date ? new Date(p.shoot_date + "T00:00:00") : new Date();
+  var a = useState({ y: start.getFullYear(), m: start.getMonth() }), cur = a[0], setCur = a[1];
+  var b = useState(null), selDay = b[0], setSelDay = b[1];
+  var c = useState({ state: "ja", from: "17:00", to: "20:00", note: "" }), f = c[0], setF = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+  var e2 = useState({ cal_day: "", time_from: "17:00", time_to: "19:00", note: "" }), np = e2[0], setNp = e2[1];
+  var lastWin = useRef({ from: "17:00", to: "20:00" });
+  function setForm(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+  function setNew(k, v) { setNp(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  var byDay = {};
+  avail.forEach(function (x) {
+    if (!byDay[x.cal_day]) byDay[x.cal_day] = {};
+    byDay[x.cal_day][x.party] = x;
+  });
+
+  var todayIso = isoDay(new Date());
+
+  useEffect(function () {
+    if (!selDay) return;
+    var mine = (byDay[selDay] || {})[party];
+    if (mine) setF({ state: mine.state, from: mine.time_from || "", to: mine.time_to || "", note: mine.note || "" });
+    else setF({ state: "ja", from: lastWin.current.from, to: lastWin.current.to, note: "" });
+  }, [selDay]);
+
+  function save() {
+    if (!selDay) return;
+    if (f.state !== "nein" && (!f.from || !f.to)) { props.toast("Bitte trag ein Zeitfenster ein."); return; }
+    if (f.from && f.to && toMin(f.to) <= toMin(f.from)) { props.toast("Das Ende muss nach dem Anfang liegen."); return; }
+    setBusy(true);
+    if (f.from && f.to) lastWin.current = { from: f.from, to: f.to };
+    var q = admin
+      ? sb.from("ps_availability").upsert({
+          planning_id: p.id, cal_day: selDay, party: "fotograf", state: f.state,
+          time_from: f.from || null, time_to: f.to || null, note: f.note || null, author_name: "Fotograf:in"
+        }, { onConflict: "planning_id,party,cal_day" })
+      : sb.rpc("ps_set_availability", {
+          p_code: props.code, p_author: props.authorName, p_day: selDay,
+          p_state: f.state, p_from: f.from || null, p_to: f.to || null, p_note: f.note || null
+        });
+    Promise.resolve(q).then(function (r) {
+      setBusy(false);
+      if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
+      props.reload(); props.toast("Eintrag gespeichert");
+    });
+  }
+  function clearDay() {
+    if (!selDay) return;
+    setBusy(true);
+    var q = admin
+      ? sb.from("ps_availability").delete().eq("planning_id", p.id).eq("party", "fotograf").eq("cal_day", selDay)
+      : sb.rpc("ps_clear_availability", { p_code: props.code, p_day: selDay });
+    Promise.resolve(q).then(function () { setBusy(false); props.reload(); props.toast("Eintrag entfernt"); });
+  }
+
+  /* Tage, an denen sich beide grundsätzlich einig sind */
+  var matches = Object.keys(byDay).filter(function (k) {
+    var v = byDay[k];
+    return v.fotograf && v.model && v.fotograf.state !== "nein" && v.model.state !== "nein" && k >= todayIso;
+  }).sort().map(function (k) {
+    var v = byDay[k];
+    return { day: k, both: v.fotograf.state === "ja" && v.model.state === "ja", win: windowOverlap(v.fotograf, v.model) };
+  });
+
+  function propose(day, win) {
+    if (!win) { props.toast("An dem Tag überschneiden sich eure Zeiten nicht."); return; }
+    sb.from("ps_proposals").insert({
+      planning_id: p.id, cal_day: day, time_from: win.from, time_to: win.to
+    }).then(function (r) {
+      if (r.error) props.toast("Fehler: " + r.error.message);
+      else { props.reload(); props.toast("Vorschlag angelegt"); }
+    });
+  }
+  function addProposal(ev) {
+    ev.preventDefault();
+    if (!np.cal_day) { props.toast("Bitte ein Datum wählen."); return; }
+    if (toMin(np.time_to) <= toMin(np.time_from)) { props.toast("Das Ende muss nach dem Anfang liegen."); return; }
+    sb.from("ps_proposals").insert({
+      planning_id: p.id, cal_day: np.cal_day, time_from: np.time_from,
+      time_to: np.time_to, note: np.note || null
+    }).then(function (r) {
+      if (r.error) props.toast("Fehler: " + r.error.message);
+      else { setNp({ cal_day: "", time_from: "17:00", time_to: "19:00", note: "" }); props.reload(); props.toast("Vorschlag angelegt"); }
+    });
+  }
+  function accept(v) {
+    if (!confirm("Den " + dayLong(v.cal_day) + " als Shootingtag übernehmen?")) return;
+    Promise.all([
+      sb.from("ps_proposals").update({ status: "angenommen" }).eq("id", v.id),
+      sb.from("ps_proposals").update({ status: "abgelehnt" }).eq("planning_id", p.id).eq("status", "offen").neq("id", v.id),
+      sb.from("ps_plannings").update({
+        shoot_date: v.cal_day, shoot_time: v.time_from + " – " + v.time_to, status: "bestaetigt"
+      }).eq("id", p.id)
+    ]).then(function () {
+      props.reload(); if (props.reloadList) props.reloadList();
+      props.toast("Termin steht: " + dayLong(v.cal_day));
+    });
+  }
+  function withdraw(v) {
+    sb.from("ps_proposals").update({ status: "zurueckgezogen" }).eq("id", v.id).then(function () { props.reload(); });
+  }
+  function vote(v, val) {
+    Promise.resolve(sb.rpc("ps_vote_proposal", { p_code: props.code, p_proposal_id: v.id, p_vote: val, p_comment: null }))
+      .then(function (r) {
+        if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
+        props.reload();
+      });
+  }
+
+  var cells = monthCells(cur.y, cur.m);
+  var sel = selDay ? (byDay[selDay] || {}) : {};
+  var mine = sel[party], theirs = sel[other];
+
+  return div({ className: "cards" },
+    /* ---------- Monatskalender ---------- */
+    sec({ className: "card" },
+      div({ className: "cal-head" },
+        span({ className: "mo" }, MONTHS_LONG[cur.m] + " " + cur.y),
+        btn({ className: "btn btn-quiet btn-sm", onClick: function () {
+          var n = new Date(); setCur({ y: n.getFullYear(), m: n.getMonth() });
+        } }, "Heute"),
+        div({ className: "cal-nav" },
+          btn({ onClick: function () {
+            setCur(cur.m === 0 ? { y: cur.y - 1, m: 11 } : { y: cur.y, m: cur.m - 1 });
+          }, "aria-label": "Vorheriger Monat" }, "‹"),
+          btn({ onClick: function () {
+            setCur(cur.m === 11 ? { y: cur.y + 1, m: 0 } : { y: cur.y, m: cur.m + 1 });
+          }, "aria-label": "Nächster Monat" }, "›"))),
+
+      div({ className: "cal-dow" }, DOW.map(function (x) { return span({ key: x }, x); })),
+
+      div({ className: "cal-grid" },
+        cells.map(function (dt, i) {
+          if (!dt) return div({ key: "v" + i, className: "cal-cell void" });
+          var iso = isoDay(dt);
+          var v = byDay[iso] || {};
+          var isMatch = v.fotograf && v.model && v.fotograf.state === "ja" && v.model.state === "ja";
+          var cls = "cal-cell";
+          if (iso < todayIso) cls += " past";
+          if (iso === todayIso) cls += " today";
+          if (iso === selDay) cls += " on";
+          if (isMatch) cls += " match";
+          return btn({
+            key: iso, className: cls,
+            onClick: function () { setSelDay(iso === selDay ? null : iso); },
+            "aria-label": dayLong(iso)
+          },
+            iso === p.shoot_date ? span({ className: "shoot", title: "Shootingtag" }) : null,
+            span({ className: "n" }, dt.getDate()),
+            div({ className: "cal-bars" },
+              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Fotograf:in" }),
+              ii({ className: v.model ? v.model.state : "", title: "Model" })));
+        })),
+
+      div({ className: "legend" },
+        span(null, ii({ style: { background: "var(--ok)" } }), "Passt"),
+        span(null, ii({ style: { background: "var(--warn)" } }), "Vielleicht"),
+        span(null, ii({ style: { background: "var(--crit)" } }), "Passt nicht"),
+        span(null, span({ className: "dim" }, "Obere Leiste: Fotograf:in · untere: Model"))),
+
+      /* ---------- Tageseditor ---------- */
+      selDay ? div({ className: "daybox" },
+        div({ className: "row", style: { justifyContent: "space-between", alignItems: "baseline" } },
+          h4({ style: { fontSize: 14 } }, dayLong(selDay)),
+          btn({ className: "btn btn-quiet btn-sm", onClick: function () { setSelDay(null); } }, "Schließen")),
+
+        theirs
+          ? div({ className: "other" },
+              bb(null, otherName + ": " + STATE_LABEL[theirs.state]),
+              theirs.time_from ? span({ className: "mono" }, "  " + theirs.time_from + " – " + theirs.time_to) : null,
+              theirs.note ? para({ className: "muted", style: { marginTop: 4 } }, theirs.note) : null)
+          : div({ className: "other dim" }, otherName + " hat sich zu diesem Tag noch nicht geäußert."),
+
+        div(null,
+          span({ className: "lab" }, "Dein Eintrag"),
+          div({ className: "states", style: { marginTop: 6 } },
+            ["ja", "vielleicht", "nein"].map(function (s) {
+              return btn({
+                key: s, className: "state-btn " + s + (f.state === s ? " on" : ""),
+                onClick: function () { setForm("state", s); }
+              }, ii(null), STATE_LABEL[s]);
+            }))),
+
+        f.state !== "nein" ? div({ className: "col", style: { gap: 8 } },
+          div({ className: "row" },
+            Field({ label: "Von" }, inp({ className: "inp", type: "time", style: { width: 116 }, value: f.from,
+              onChange: function (ev) { setForm("from", ev.target.value); } })),
+            Field({ label: "Bis" }, inp({ className: "inp", type: "time", style: { width: 116 }, value: f.to,
+              onChange: function (ev) { setForm("to", ev.target.value); } }))),
+          div({ className: "presets" },
+            PRESETS.map(function (x) {
+              return btn({ key: x[0], className: "chip", onClick: function () { setForm("from", x[1]); setForm("to", x[2]); } }, x[0]);
+            }))) : null,
+
+        Field({ label: "Notiz" },
+          inp({ className: "inp", value: f.note, placeholder: "z. B. erst ab 17 Uhr, komme direkt von der Arbeit",
+            onChange: function (ev) { setForm("note", ev.target.value); } })),
+
+        div({ className: "row", style: { justifyContent: "space-between" } },
+          btn({ className: "btn btn-pri", onClick: save, disabled: busy },
+            busy ? span({ className: "spin" }) : null, mine ? "Eintrag aktualisieren" : "Eintrag speichern"),
+          mine ? btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: clearDay }, "Eintrag löschen") : null))
+        : div({ className: "daybox dim", style: { fontSize: 13 } },
+            "Tipp auf einen Tag, um deine Verfügbarkeit einzutragen. Tage, an denen ihr beide zusagt, werden hervorgehoben.")),
+
+    /* ---------- Treffer ---------- */
+    Card({ title: "Passende Tage", flush: true, aside: span({ className: "lab tnum" }, matches.length) },
+      matches.length === 0
+        ? div({ style: { padding: 16 } }, Empty({}, "Noch keine Überschneidung. Sobald ihr beide denselben Tag markiert habt, steht er hier."))
+        : div({ className: "rows" },
+            matches.map(function (m) {
+              return div({ key: m.day, className: "match-row" },
+                span({ className: "d" }, dayLong(m.day)),
+                m.win
+                  ? span({ className: "st st-bestaetigt" }, ii(null), m.win.from + " – " + m.win.to)
+                  : span({ className: "st st-idee" }, ii(null), "Zeiten passen nicht"),
+                m.both ? null : span({ className: "lab" }, "eine Seite: vielleicht"),
+                div({ style: { flex: 1 } }),
+                admin ? btn({ className: "btn btn-sm", onClick: function () { propose(m.day, m.win); } }, "Als Vorschlag") : null);
+            }))),
+
+    /* ---------- Vorschläge ---------- */
+    admin ? Card({ title: "Vorschlag von Hand anlegen" },
+      frm({ className: "row", onSubmit: addProposal, style: { alignItems: "flex-end" } },
+        Field({ label: "Tag" }, inp({ className: "inp", type: "date", value: np.cal_day,
+          onChange: function (ev) { setNew("cal_day", ev.target.value); } })),
+        Field({ label: "Von" }, inp({ className: "inp", type: "time", style: { width: 116 }, value: np.time_from,
+          onChange: function (ev) { setNew("time_from", ev.target.value); } })),
+        Field({ label: "Bis" }, inp({ className: "inp", type: "time", style: { width: 116 }, value: np.time_to,
+          onChange: function (ev) { setNew("time_to", ev.target.value); } })),
+        div({ style: { flex: 1, minWidth: 160 } },
+          Field({ label: "Notiz" }, inp({ className: "inp", value: np.note, placeholder: "Sonnenuntergang 19:04",
+            onChange: function (ev) { setNew("note", ev.target.value); } }))),
+        btn({ className: "btn btn-pri" }, "Vorschlagen"))) : null,
+
+    Card({ title: "Terminvorschläge", flush: true, aside: span({ className: "lab tnum" }, props_.length) },
+      props_.length === 0
+        ? div({ style: { padding: 16 } }, Empty({},
+            admin ? "Noch kein Vorschlag. Nimm einen passenden Tag von oben oder leg einen von Hand an."
+                  : "Deine Fotograf:in hat noch keinen konkreten Termin vorgeschlagen."))
+        : div({ className: "rows" },
+            props_.map(function (v) {
+              var open = v.status === "offen";
+              return div({ key: v.id, className: "prop" },
+                div({ className: "when" },
+                  bb(null, dayLong(v.cal_day)),
+                  span(null, v.time_from + " – " + v.time_to),
+                  v.note ? para({ className: "muted", style: { fontSize: 12.5, marginTop: 3 } }, v.note) : null),
+                div({ style: { flex: 1, minWidth: 120 } },
+                  v.status === "angenommen" ? span({ className: "st st-bestaetigt" }, ii(null), "Angenommen")
+                    : v.status === "abgelehnt" ? span({ className: "st st-verworfen" }, ii(null), "Verworfen")
+                    : v.status === "zurueckgezogen" ? span({ className: "st st-idee" }, ii(null), "Zurückgezogen")
+                    : v.model_vote ? span({ className: "st st-" + (v.model_vote === "ja" ? "bestaetigt" : v.model_vote === "nein" ? "verworfen" : "geplant") },
+                        ii(null), "Model: " + STATE_LABEL[v.model_vote])
+                    : span({ className: "st st-idee" }, ii(null), "Warte auf Model")),
+                admin
+                  ? (open ? div({ className: "row", style: { gap: 6 } },
+                      btn({ className: "btn btn-sm btn-pri", onClick: function () { accept(v); } }, "Als Termin"),
+                      btn({ className: "btn btn-quiet btn-sm", onClick: function () { withdraw(v); } }, "Zurückziehen")) : null)
+                  : (open ? div({ className: "vote" },
+                      ["ja", "vielleicht", "nein"].map(function (s) {
+                        return btn({ key: s, className: (v.model_vote === s ? "on " + s : ""), onClick: function () { vote(v, s); } },
+                          STATE_LABEL[s]);
+                      })) : null));
+            }))));
+}
+
+/* ============================================================
    Model-Ansicht
    ============================================================ */
 function ModelApp(props) {
@@ -1581,8 +2109,10 @@ function ModelApp(props) {
   }
 
   var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
+  var openVotes = (bundle.proposals || []).filter(function (x) { return x.status === "offen" && !x.model_vote; }).length;
   var tabs = [
     ["uebersicht", "Übersicht", 0],
+    ["termine", "Termine", openVotes],
     ["moodboard", "Moodboard", bundle.images.length],
     ["ideen", "Ideen", bundle.ideas.length],
     ["shotlist", "Shotlist", bundle.shots.length],
@@ -1612,6 +2142,7 @@ function ModelApp(props) {
       })),
     div({ className: "content" },
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
+        : tab === "termine" ? h(Scheduling, { planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "moodboard" ? h(Moodboard, { planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "ideen" ? h(Ideas, { planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
@@ -1651,6 +2182,42 @@ function ModelOverview(props) {
             para({ className: "dim", style: { fontSize: 12.5 } }, "Punkte erledigt"))))));
 }
 
+/* ---------- Neues Passwort nach dem Link aus der Mail ---------- */
+function NewPassword(props) {
+  var a = useState(""), pw = a[0], setPw = a[1];
+  var b = useState(""), pw2 = b[0], setPw2 = b[1];
+  var c = useState(""), err = c[0], setErr = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+
+  function save(ev) {
+    ev.preventDefault();
+    if (pw.length < 6) { setErr("Das Passwort braucht mindestens sechs Zeichen."); return; }
+    if (pw !== pw2) { setErr("Die beiden Eingaben stimmen nicht überein."); return; }
+    setBusy(true); setErr("");
+    sb.auth.updateUser({ password: pw }).then(function (r) {
+      setBusy(false);
+      if (r.error) { setErr(r.error.message); return; }
+      props.done();
+    });
+  }
+
+  return div({ className: "entrance", style: { gridTemplateColumns: "1fr" } },
+    div({ className: "right", style: { maxWidth: 420, margin: "0 auto", width: "100%" } },
+      span({ className: "lab" }, "Konto"),
+      h2({ className: "serif", style: { fontSize: 27, letterSpacing: "-.02em" } }, "Neues Passwort setzen"),
+      para({ className: "muted" }, "Wähle ein Passwort, dann bist du direkt angemeldet."),
+      frm({ className: "col", onSubmit: save },
+        Field({ label: "Neues Passwort" },
+          inp({ className: "inp", type: "password", value: pw, autoFocus: true, autoComplete: "new-password",
+            onChange: function (ev) { setPw(ev.target.value); } })),
+        Field({ label: "Noch einmal" },
+          inp({ className: "inp", type: "password", value: pw2, autoComplete: "new-password",
+            onChange: function (ev) { setPw2(ev.target.value); } })),
+        btn({ className: "btn btn-pri btn-wide", disabled: busy },
+          busy ? span({ className: "spin" }) : null, "Passwort speichern")),
+      err ? div({ className: "hint bad" }, err) : null));
+}
+
 /* ============================================================
    Wurzel
    ============================================================ */
@@ -1659,6 +2226,7 @@ function App() {
   var b = useState(false), ready = b[0], setReady = b[1];
   var c = useState(null), model = c[0], setModel = c[1];
   var d = useState(""), msg = d[0], setMsg = d[1];
+  var e = useState(false), recovery = e[0], setRecovery = e[1];
   var timer = useRef(null);
 
   var toast = useCallback(function (m) {
@@ -1669,7 +2237,10 @@ function App() {
 
   useEffect(function () {
     sb.auth.getSession().then(function (r) { setSession(r.data.session); setReady(true); });
-    var sub = sb.auth.onAuthStateChange(function (_e, s) { setSession(s); });
+    var sub = sb.auth.onAuthStateChange(function (evt, s) {
+      setSession(s);
+      if (evt === "PASSWORD_RECOVERY") setRecovery(true);
+    });
     return function () { sub.data.subscription.unsubscribe(); };
   }, []);
 
@@ -1677,6 +2248,7 @@ function App() {
 
   var view;
   if (!ready) view = div({ style: { display: "grid", placeItems: "center", minHeight: "100vh" } }, span({ className: "spin" }));
+  else if (recovery) view = h(NewPassword, { done: function () { setRecovery(false); toast("Passwort geändert"); } });
   else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast, onLeave: leave });
   else if (session) view = h(AdminApp, { session: session, toast: toast });
   else view = h(Entrance, { onModel: function (code, data) { setModel({ code: code, data: data }); }, toast: toast });
