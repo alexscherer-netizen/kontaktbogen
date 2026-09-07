@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Kontaktbogen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root{
+  --bg:#FAF9F6; --surface:#FFFFFF; --sunken:#F2F0EB; --raised:#FFFFFF;
+  --line:#E6E2DA; --line-2:#D1CBBF; --line-3:#B8B1A2;
+  --ink:#191813; --ink-2:#59554B; --ink-3:#8B8578;
+  --accent:#12504E; --accent-hi:#0C3B39; --accent-tint:#E3EEEB; --on-accent:#FFFFFF;
+  --ok:#2E6B4F; --ok-tint:#E5F0E9;
+  --warn:#96660F; --warn-tint:#F6EEDC;
+  --crit:#9B342C; --crit-tint:#F7E9E6;
+  --shadow-1:0 1px 2px rgba(25,24,19,.05);
+  --shadow-2:0 12px 32px -20px rgba(25,24,19,.45), 0 1px 2px rgba(25,24,19,.06);
+  --r:7px; --r-sm:5px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121310; --surface:#1A1C18; --sunken:#16180F; --raised:#20231E;
+    --line:#2B2E27; --line-2:#3B3F36; --line-3:#4E5347;
+    --ink:#EDEBE4; --ink-2:#A9A599; --ink-3:#7D786B;
+    --accent:#6FC0B4; --accent-hi:#8FD4C9; --accent-tint:#16332F; --on-accent:#0B1F1D;
+    --ok:#63B98C; --ok-tint:#16281F;
+    --warn:#D3A249; --warn-tint:#2C2415;
+    --crit:#DE8177; --crit-tint:#2E1A17;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5);
+    --shadow-2:0 16px 40px -24px #000, 0 1px 2px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121310; --surface:#1A1C18; --sunken:#16180F; --raised:#20231E;
+  --line:#2B2E27; --line-2:#3B3F36; --line-3:#4E5347;
+  --ink:#EDEBE4; --ink-2:#A9A599; --ink-3:#7D786B;
+  --accent:#6FC0B4; --accent-hi:#8FD4C9; --accent-tint:#16332F; --on-accent:#0B1F1D;
+  --ok:#63B98C; --ok-tint:#16281F;
+  --warn:#D3A249; --warn-tint:#2C2415;
+  --crit:#DE8177; --crit-tint:#2E1A17;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 16px 40px -24px #000, 0 1px 2px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+/* ============================================================
+   Grundlagen
+   ============================================================ */
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01" on;
+}
+h1,h2,h3,h4{margin:0; font-weight:600; text-wrap:balance; letter-spacing:-.012em}
+p{margin:0}
+button,input,textarea,select{font:inherit; color:inherit}
+a{color:var(--accent); text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+::selection{background:var(--accent-tint)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.serif{font-family:"Source Serif 4",Georgia,serif}
+.mono{font-family:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.tnum{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+.dim{color:var(--ink-3)}
+.lab{
+  font-family:"DM Mono",monospace; font-size:10px; font-weight:500;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
+}
+.trunc{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* ============================================================
+   App-Rahmen
+   ============================================================ */
+.app{display:grid; grid-template-columns:272px minmax(0,1fr); min-height:100vh}
+@media (max-width:980px){.app{grid-template-columns:1fr}}
+
+.rail{
+  background:var(--surface); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:100vh;
+  position:sticky; top:0; max-height:100vh;
+}
+@media (max-width:980px){.rail{position:static; min-height:0; max-height:none; border-right:none; border-bottom:1px solid var(--line)}}
+
+.mark{display:flex; align-items:center; gap:10px; padding:16px 18px 14px}
+.mark .glyph{
+  width:26px; height:26px; border:1px solid var(--ink); border-radius:2px; flex:none;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; overflow:hidden;
+}
+.mark .glyph i{display:block; background:var(--ink); opacity:.14}
+.mark .glyph i:nth-child(2){opacity:.45}
+.mark .glyph i:nth-child(3){background:var(--accent); opacity:1}
+.mark .glyph i:nth-child(4){opacity:.26}
+.mark .name{font-weight:600; letter-spacing:-.02em; font-size:15px; line-height:1.1}
+.mark .sub{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-family:"DM Mono",monospace}
+
+.rail-tools{padding:0 14px 12px; display:flex; flex-direction:column; gap:8px}
+.rail-scroll{overflow-y:auto; padding:0 8px 16px; flex:1; min-height:0}
+.rail-foot{border-top:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; gap:8px}
+.rail-foot .who{flex:1; min-width:0; font-size:12px; color:var(--ink-3)}
+
+.group-head{
+  display:flex; align-items:center; gap:8px; padding:14px 8px 6px;
+}
+.group-head .lab{white-space:nowrap}
+.group-head .rule{flex:1; height:1px; background:var(--line)}
+
+/* Planungseintrag */
+.entry{
+  width:100%; display:grid; grid-template-columns:38px minmax(0,1fr); gap:11px;
+  text-align:left; background:transparent; border:none; cursor:pointer;
+  padding:9px 10px; border-radius:var(--r); align-items:start;
+}
+.entry:hover{background:var(--sunken)}
+.entry.on{background:var(--sunken)}
+.entry.on .e-title{color:var(--ink)}
+.e-date{
+  border:1px solid var(--line-2); border-radius:var(--r-sm); padding:3px 0 4px;
+  text-align:center; font-family:"DM Mono",monospace; line-height:1.05; background:var(--surface);
+}
+.e-date b{display:block; font-size:14px; font-weight:500; font-variant-numeric:tabular-nums}
+.e-date span{display:block; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-top:2px}
+.entry.on .e-date{border-color:var(--accent); color:var(--accent)}
+.entry.on .e-date span{color:var(--accent)}
+.e-title{font-weight:500; font-size:13.5px; line-height:1.3; display:flex; align-items:center; gap:6px}
+.e-title .dot{width:5px; height:5px; border-radius:50%; flex:none}
+.e-meta{font-family:"DM Mono",monospace; font-size:11px; color:var(--ink-3); margin-top:3px}
+
+/* ============================================================
+   Kopfzeile im Inhalt
+   ============================================================ */
+.topbar{
+  position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line);
+  background:var(--bg); background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(10px);
+}
+@supports not (backdrop-filter: blur(2px)){.topbar{background:var(--bg)}}
+.topbar-in{display:flex; align-items:center; gap:14px; padding:13px 28px}
+@media (max-width:640px){.topbar-in{padding:12px 16px; flex-wrap:wrap}}
+.topbar h1{font-size:17px; letter-spacing:-.02em}
+.topbar .sp{flex:1}
+.crumb{font-family:"DM Mono",monospace; font-size:11px; color:var(--ink-3); letter-spacing:.06em}
+
+.tabs{display:flex; gap:22px; padding:0 28px; border-bottom:1px solid var(--line); overflow-x:auto; background:var(--bg)}
+@media (max-width:640px){.tabs{padding:0 16px; gap:16px}}
+.tab{
+  background:none; border:none; cursor:pointer; padding:11px 0 10px; white-space:nowrap;
+  font-size:13px; font-weight:500; color:var(--ink-3); border-bottom:1.5px solid transparent;
+  margin-bottom:-1px; display:flex; align-items:center; gap:7px;
+}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink); border-bottom-color:var(--accent)}
+.tab .cnt{
+  font-family:"DM Mono",monospace; font-size:10.5px; background:var(--sunken); color:var(--ink-3);
+  padding:1px 5px; border-radius:4px; font-variant-numeric:tabular-nums;
+}
+.tab.on .cnt{background:var(--accent-tint); color:var(--accent)}
+
+.content{padding:24px 28px 80px; max-width:1180px}
+@media (max-width:640px){.content{padding:18px 16px 60px}}
+
+/* ============================================================
+   Bedienelemente
+   ============================================================ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  border:1px solid var(--line-2); background:var(--surface); color:var(--ink);
+  padding:7px 13px; border-radius:var(--r-sm); cursor:pointer; font-size:13px; font-weight:500;
+  box-shadow:var(--shadow-1); transition:background .12s ease, border-color .12s ease;
+}
+.btn:hover{background:var(--sunken); border-color:var(--line-3)}
+.btn[disabled]{opacity:.45; cursor:not-allowed}
+.btn-pri{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.btn-pri:hover{background:var(--accent-hi); border-color:var(--accent-hi)}
+.btn-quiet{border-color:transparent; background:transparent; box-shadow:none; color:var(--ink-2)}
+.btn-quiet:hover{background:var(--sunken); color:var(--ink)}
+.btn-sm{padding:4px 9px; font-size:12px}
+.btn-wide{width:100%}
+.btn-danger:hover{border-color:var(--crit); color:var(--crit); background:var(--crit-tint)}
+
+.inp{
+  width:100%; background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-sm);
+  padding:7px 10px; color:var(--ink); box-shadow:var(--shadow-1);
+}
+.inp::placeholder{color:var(--ink-3)}
+.inp:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint)}
+textarea.inp{resize:vertical; min-height:66px; line-height:1.55}
+select.inp{appearance:none; padding-right:26px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+  background-size:5px 5px, 5px 5px; background-repeat:no-repeat;
+}
+.inp-sm{padding:4px 8px; font-size:12.5px; width:auto}
+.search{position:relative}
+.search .inp{padding-left:28px}
+.search svg{position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--ink-3)}
+
+.field{display:flex; flex-direction:column; gap:5px; min-width:0}
+.field > .lab{margin-bottom:1px}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.col{display:flex; flex-direction:column; gap:10px}
+.g2{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px}
+
+/* Filterchips */
+.chips{display:flex; gap:6px; flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  padding:4px 11px; border-radius:100px; font-size:12.5px; cursor:pointer;
+}
+.chip:hover{border-color:var(--line-3); color:var(--ink)}
+.chip.on{background:var(--ink); border-color:var(--ink); color:var(--bg)}
+
+/* Status */
+.st{
+  display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500;
+  padding:2.5px 9px 2.5px 7px; border-radius:100px; border:1px solid transparent; white-space:nowrap;
+}
+.st i{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
+.st-idee{background:var(--sunken); color:var(--ink-2); border-color:var(--line)}
+.st-geplant{background:var(--accent-tint); color:var(--accent); border-color:transparent}
+.st-bestaetigt{background:var(--ok-tint); color:var(--ok)}
+.st-erledigt{background:var(--ok-tint); color:var(--ok)}
+.st-erledigt i{border-radius:1px}
+.st-verworfen,.st-abgesagt{background:var(--crit-tint); color:var(--crit)}
+
+/* ============================================================
+   Flächen
+   ============================================================ */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow-1)}
+.card > .hd{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:13px 16px; border-bottom:1px solid var(--line);
+}
+.card > .hd h3{font-size:13.5px}
+.card > .bd{padding:16px}
+.card > .bd.flush{padding:0}
+.cards{display:flex; flex-direction:column; gap:16px}
+.split{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr); gap:16px; align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+
+.rows > *{border-top:1px solid var(--line)}
+.rows > *:first-child{border-top:none}
+.rw{display:flex; gap:12px; padding:11px 16px; align-items:flex-start}
+.rw:hover{background:var(--sunken)}
+
+.dl{display:flex; flex-direction:column}
+.dl > div{display:flex; align-items:baseline; gap:12px; padding:9px 0; border-top:1px solid var(--line)}
+.dl > div:first-child{border-top:none; padding-top:0}
+.dl dt{flex:none; width:88px}
+.dl dd{margin:0; flex:1; min-width:0; font-size:13.5px}
+
+.empty{
+  padding:30px 20px; text-align:center; color:var(--ink-3); font-size:13px;
+  border:1px dashed var(--line-2); border-radius:var(--r); background:var(--sunken);
+}
+.hint{
+  font-size:13px; color:var(--ink-2); background:var(--sunken);
+  border:1px solid var(--line); border-left:2px solid var(--accent);
+  padding:10px 13px; border-radius:0 var(--r-sm) var(--r-sm) 0;
+}
+.hint.bad{border-left-color:var(--crit); color:var(--crit); background:var(--crit-tint)}
+
+/* Fortschritt */
+.meter{display:flex; flex-direction:column; gap:6px}
+.meter .top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:12.5px}
+.meter .bar{height:5px; border-radius:100px; background:var(--sunken); overflow:hidden; border:1px solid var(--line)}
+.meter .bar i{display:block; height:100%; background:var(--accent); border-radius:100px}
+.ringwrap{display:flex; align-items:center; gap:16px}
+.ringwrap .big{font-size:26px; font-weight:600; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+
+/* Zugangscode */
+.access{border:1px solid var(--line-2); border-radius:var(--r); overflow:hidden; background:var(--sunken)}
+.access .val{
+  font-family:"DM Mono",monospace; font-size:23px; letter-spacing:.3em; font-weight:500;
+  padding:16px 14px 15px; text-align:center; background:var(--surface); border-bottom:1px solid var(--line);
+  user-select:all;
+}
+.access .acts{display:flex}
+.access .acts button{
+  flex:1; background:transparent; border:none; border-left:1px solid var(--line); padding:8px 4px;
+  font-size:12px; cursor:pointer; color:var(--ink-2);
+}
+.access .acts button:first-child{border-left:none}
+.access .acts button:hover{background:var(--surface); color:var(--ink)}
+
+/* Kontaktbogen / Galerie */
+.gal{display:grid; grid-template-columns:repeat(auto-fill,minmax(178px,1fr)); gap:12px}
+.shot{border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--sunken); position:relative}
+.shot .ph{aspect-ratio:4/3; display:block; width:100%; object-fit:cover; background:var(--sunken)}
+.shot .info{padding:8px 10px 9px; border-top:1px solid var(--line); background:var(--surface)}
+.shot .info .t{font-size:12.5px; line-height:1.35; color:var(--ink)}
+.shot .info .m{font-family:"DM Mono",monospace; font-size:10px; color:var(--ink-3); margin-top:3px; letter-spacing:.05em}
+.shot .rm{
+  position:absolute; top:6px; right:6px; background:var(--surface); border:1px solid var(--line-2);
+  border-radius:4px; width:22px; height:22px; line-height:1; cursor:pointer; color:var(--ink-2);
+  opacity:0; transition:opacity .12s;
+}
+.shot:hover .rm, .shot:focus-within .rm{opacity:1}
+.shot .rm:hover{color:var(--crit); border-color:var(--crit)}
+.shot .no{
+  position:absolute; top:6px; left:6px; font-family:"DM Mono",monospace; font-size:9.5px;
+  background:rgba(0,0,0,.62); color:#fff; padding:1px 5px; border-radius:3px; letter-spacing:.08em;
+}
+
+/* Shotlist-Zeile */
+.slot{display:grid; grid-template-columns:26px 54px minmax(0,1fr) auto; gap:12px; padding:12px 16px; align-items:start}
+@media (max-width:640px){.slot{grid-template-columns:26px minmax(0,1fr); }.slot .thumb{display:none}}
+.slot .idx{font-family:"DM Mono",monospace; font-size:12px; color:var(--ink-3); padding-top:2px; font-variant-numeric:tabular-nums}
+.thumb{width:54px; height:40px; object-fit:cover; border-radius:3px; border:1px solid var(--line); background:var(--sunken)}
+.slot h4{font-size:13.5px; font-weight:500}
+.slot .sub{font-size:13px; color:var(--ink-2); margin-top:3px; white-space:pre-wrap}
+.tagrow{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
+.tag{font-family:"DM Mono",monospace; font-size:10.5px; color:var(--ink-3); border:1px solid var(--line); border-radius:3px; padding:1px 6px}
+
+/* Checkliste */
+.chk{display:flex; gap:11px; padding:10px 16px; align-items:flex-start; cursor:pointer}
+.chk input{margin:2px 0 0; width:15px; height:15px; accent-color:var(--accent); flex:none; cursor:pointer}
+.chk .t{font-size:13.5px}
+.chk.done .t{color:var(--ink-3); text-decoration:line-through}
+.chk[data-locked="1"]{cursor:default}
+
+/* Zeitplan */
+.tl{padding:4px 16px 12px}
+.tl-row{display:grid; grid-template-columns:96px minmax(0,1fr); gap:16px; position:relative; padding:12px 0 12px 0}
+.tl-row::before{content:""; position:absolute; left:96px; top:0; bottom:0; width:1px; background:var(--line)}
+.tl-row:first-child::before{top:16px}
+.tl-row:last-child::before{bottom:calc(100% - 16px)}
+.tl-row .dot{position:absolute; left:93px; top:15px; width:7px; height:7px; border-radius:50%; background:var(--accent); border:2px solid var(--bg)}
+.tl-row .tm{font-family:"DM Mono",monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; text-align:right; padding-top:1px}
+.tl-row .bdy{padding-left:16px}
+
+/* Absprachen */
+.thread{display:flex; flex-direction:column; gap:14px; padding:16px; max-height:52vh; overflow-y:auto}
+.bubble{max-width:min(560px,88%); display:flex; flex-direction:column; gap:4px}
+.bubble .who{font-size:11px; color:var(--ink-3)}
+.bubble .who b{font-weight:500; color:var(--ink-2)}
+.bubble .txt{border:1px solid var(--line); background:var(--surface); border-radius:2px 9px 9px 9px; padding:9px 12px; white-space:pre-wrap; font-size:13.5px}
+.bubble.self{align-self:flex-end; align-items:flex-end}
+.bubble.self .txt{background:var(--accent-tint); border-color:transparent; border-radius:9px 2px 9px 9px}
+.composer{border-top:1px solid var(--line); padding:12px 16px; display:flex; gap:10px; align-items:flex-end}
+
+/* ============================================================
+   Anmeldung
+   ============================================================ */
+.entrance{min-height:100vh; display:grid; grid-template-columns:1.1fr .9fr}
+@media (max-width:900px){.entrance{grid-template-columns:1fr}}
+.entrance .left{
+  padding:56px 6vw; display:flex; flex-direction:column; justify-content:center; gap:26px;
+  border-right:1px solid var(--line); background:var(--surface);
+}
+@media (max-width:900px){.entrance .left{border-right:none; border-bottom:1px solid var(--line); padding:40px 24px}}
+.entrance h1{font-family:"Source Serif 4",Georgia,serif; font-size:clamp(30px,3.8vw,46px); line-height:1.08; letter-spacing:-.025em; font-weight:600}
+.entrance .lead{font-size:16px; line-height:1.62; color:var(--ink-2); max-width:44ch}
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+.facts div{background:var(--surface); padding:13px 14px}
+.facts b{display:block; font-size:19px; font-weight:600; letter-spacing:-.02em; margin-bottom:2px}
+.facts span{font-size:12px; color:var(--ink-3); line-height:1.35; display:block}
+.entrance .right{padding:48px 6vw; display:flex; flex-direction:column; justify-content:center; gap:18px}
+@media (max-width:900px){.entrance .right{padding:32px 24px 56px}}
+.seg{display:flex; border:1px solid var(--line-2); border-radius:var(--r-sm); overflow:hidden; background:var(--sunken)}
+.seg button{flex:1; background:transparent; border:none; padding:8px; cursor:pointer; font-size:12.5px; font-weight:500; color:var(--ink-3)}
+.seg button.on{background:var(--surface); color:var(--ink); box-shadow:var(--shadow-1)}
+.codefield{
+  font-family:"DM Mono",monospace; font-size:24px; letter-spacing:.34em; text-align:center;
+  text-transform:uppercase; padding:14px 8px 14px 16px;
+}
+
+/* Sonstiges */
+.spin{display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{
+  position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:99;
+  background:var(--ink); color:var(--bg); padding:9px 15px; border-radius:var(--r-sm);
+  font-size:13px; box-shadow:var(--shadow-2); max-width:min(90vw,520px);
+}
+.scrim{position:fixed; inset:0; background:rgba(10,10,8,.42); z-index:60; display:grid; place-items:center; padding:20px}
+.sheetbox{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow-2); width:min(440px,100%)}
+hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
+.hscroll{overflow-x:auto}
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<script>
+"use strict";
+(function () {
+
+var useState = React.useState, useEffect = React.useEffect,
+    useCallback = React.useCallback, useRef = React.useRef, useMemo = React.useMemo;
+
+var h = React.createElement, Frag = React.Fragment;
+function tag(n) { return function (p) { return h.apply(null, [n, p].concat([].slice.call(arguments, 1))); }; }
+var div = tag("div"), span = tag("span"), para = tag("p"), h1 = tag("h1"), h2 = tag("h2"),
+    h3 = tag("h3"), h4 = tag("h4"), btn = tag("button"), inp = tag("input"), txa = tag("textarea"),
+    sel = tag("select"), opt = tag("option"), lb = tag("label"), frm = tag("form"), im = tag("img"),
+    hdr = tag("header"), asd = tag("aside"), sec = tag("section"), nv = tag("nav"),
+    bb = tag("b"), ii = tag("i"), hr = tag("hr"), dl = tag("dl"), dt = tag("dt"), dd = tag("dd"),
+    svg = tag("svg"), circle = tag("circle"), pth = tag("path"), figure = tag("figure"), figcap = tag("figcaption");
+
+/* ============================================================
+   Supabase
+   ============================================================ */
+var SUPABASE_URL = "https://sntkvqzfiyhtvtufqfgp.supabase.co";
+var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudGt2cXpmaXlodHZ0dWZxZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ5MjcsImV4cCI6MjA5MjcyMDkyN30.viXudtCbUkzLEmdsXqAGYFwlxNB-JiHNp11g0t1XHc0";
+var BUCKET = "photoshoot";
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+/* ============================================================
+   Vokabular
+   ============================================================ */
+var STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bestätigt"], ["erledigt", "Erledigt"], ["abgesagt", "Abgesagt"]];
+var IDEA_STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bestätigt"], ["erledigt", "Erledigt"], ["verworfen", "Verworfen"]];
+var SHOT_STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bestätigt"], ["erledigt", "Erledigt"]];
+var IDEA_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["pose", "Pose"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["requisite", "Requisite"]];
+var IMG_CAT = [["moodboard", "Moodboard"], ["pose", "Pose"], ["outfit", "Outfit"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["ergebnis", "Ergebnis"]];
+var CHECK_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["equipment", "Equipment"], ["requisite", "Requisite"], ["organisation", "Organisation"]];
+var ASSIGNEE = [["fotograf", "Fotograf:in"], ["model", "Model"], ["beide", "Gemeinsam"]];
+var MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+function lbl(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return v; }
+
+/* ============================================================
+   Helfer
+   ============================================================ */
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+function fmtShort(d) {
+  if (!d) return "—";
+  var x = new Date(d + "T00:00:00");
+  return x.getDate() + ". " + MONTHS[x.getMonth()] + " " + x.getFullYear();
+}
+function fmtTs(t) {
+  if (!t) return "";
+  return new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function daysUntil(d) {
+  if (!d) return null;
+  var t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((new Date(d + "T00:00:00") - t) / 86400000);
+}
+function countdown(d) {
+  var n = daysUntil(d);
+  if (n === null) return "Termin offen";
+  if (n === 0) return "heute";
+  if (n === 1) return "morgen";
+  if (n > 1) return "in " + n + " Tagen";
+  if (n === -1) return "gestern";
+  return "vor " + Math.abs(n) + " Tagen";
+}
+function shareUrl(code) { return location.origin + location.pathname + "#code=" + code; }
+var store = {
+  get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+function copyText(t, done) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () { done(true); }, function () { done(false); });
+      return;
+    }
+  } catch (e) {}
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(ta); done(ok);
+  } catch (e2) { done(false); }
+}
+function uploadFile(file, code) {
+  var ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "" + Math.random().toString(16).slice(2));
+  var path = code + "/" + id + "." + ext;
+  return sb.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false })
+    .then(function (r) {
+      if (r.error) throw r.error;
+      return { path: path, url: sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
+    });
+}
+
+/* ============================================================
+   Kleine Bausteine
+   ============================================================ */
+/* Kinder kommen als weitere Argumente, nicht über props.children. */
+function kidsOf(args, from) {
+  var k = [].slice.call(args, from);
+  if (k.length === 1 && Array.isArray(k[0])) k = k[0];
+  return k;
+}
+function Field(props) {
+  return h.apply(null, ["div", { className: "field", key: props.key },
+    span({ className: "lab" }, props.label)].concat(kidsOf(arguments, 1)));
+}
+function Status(props) {
+  var list = props.list || STATUS;
+  return span({ className: "st st-" + props.value, key: props.key }, ii(null), lbl(list, props.value));
+}
+function Empty() {
+  var k = [].slice.call(arguments);
+  if (k.length && k[0] !== null && typeof k[0] === "object" && !React.isValidElement(k[0])) k.shift();
+  return h.apply(null, ["div", { className: "empty" }].concat(k));
+}
+function Card(props) {
+  var body = kidsOf(arguments, 1);
+  return sec({ className: "card", key: props.key },
+    props.title ? div({ className: "hd" }, h3(null, props.title), props.aside || null) : null,
+    h.apply(null, ["div", { className: "bd" + (props.flush ? " flush" : "") }].concat(body)));
+}
+function Meter(props) {
+  var pct = props.total ? Math.round(props.value / props.total * 100) : 0;
+  return div({ className: "meter" },
+    div({ className: "top" },
+      span({ className: "muted" }, props.label),
+      span({ className: "mono tnum dim" }, props.value + " / " + props.total)),
+    div({ className: "bar" }, ii({ style: { width: pct + "%" } })));
+}
+function Ring(props) {
+  var size = 82, stroke = 5, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  var v = Math.max(0, Math.min(1, props.value || 0));
+  return svg({ width: size, height: size, viewBox: "0 0 " + size + " " + size, "aria-hidden": "true" },
+    circle({ cx: size / 2, cy: size / 2, r: r, fill: "none", stroke: "var(--line)", strokeWidth: stroke }),
+    circle({
+      cx: size / 2, cy: size / 2, r: r, fill: "none", stroke: "var(--accent)", strokeWidth: stroke,
+      strokeLinecap: "round", strokeDasharray: c, strokeDashoffset: c * (1 - v),
+      transform: "rotate(-90 " + (size / 2) + " " + (size / 2) + ")"
+    }));
+}
+function SearchIcon() {
+  return svg({ width: 13, height: 13, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.6 },
+    circle({ cx: 7, cy: 7, r: 4.6 }), pth({ d: "M10.5 10.5 L14 14", strokeLinecap: "round" }));
+}
+function Toast(props) { return props.msg ? div({ className: "toast" }, props.msg) : null; }
+
+function ThemeBtn() {
+  var s = useState(function () { return document.documentElement.getAttribute("data-theme") || "auto"; });
+  var mode = s[0], set = s[1];
+  function cycle() {
+    var next = mode === "auto" ? "light" : mode === "light" ? "dark" : "auto";
+    set(next);
+    if (next === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", next);
+  }
+  return btn({ className: "btn btn-quiet btn-sm", onClick: cycle, title: "Darstellung: " + mode },
+    mode === "auto" ? "Auto" : mode === "light" ? "Hell" : "Dunkel");
+}
+
+/* ============================================================
+   Anmeldung / Zugang
+   ============================================================ */
+function Entrance(props) {
+  var hashCode = (new URLSearchParams(location.hash.replace(/^#/, "")).get("code") || "").toUpperCase();
+  var a = useState(hashCode ? "model" : "model"), mode = a[0], setMode = a[1];
+  var b = useState(hashCode), code = b[0], setCode = b[1];
+  var c = useState(""), email = c[0], setEmail = c[1];
+  var d = useState(""), pw = d[0], setPw = d[1];
+  var e = useState(false), busy = e[0], setBusy = e[1];
+  var f = useState(""), err = f[0], setErr = f[1];
+  var g = useState(""), info = g[0], setInfo = g[1];
+
+  var enter = useCallback(function (raw) {
+    var cc = String(raw == null ? "" : raw).trim().toUpperCase();
+    if (cc.length < 4) { setErr("Bitte gib den achtstelligen Zugangscode ein."); return; }
+    setBusy(true); setErr("");
+    sb.rpc("ps_load", { p_code: cc }).then(function (r) {
+      setBusy(false);
+      if (r.error || !r.data) { setErr("Dieser Code gehört zu keiner aktiven Planung."); return; }
+      props.onModel(cc, r.data);
+    });
+  }, [props.onModel]);
+
+  useEffect(function () { if (hashCode) enter(hashCode); }, []);
+
+  function login(ev) {
+    ev.preventDefault(); setBusy(true); setErr(""); setInfo("");
+    sb.auth.signInWithPassword({ email: email.trim(), password: pw }).then(function (r) {
+      setBusy(false);
+      if (r.error) setErr(r.error.message === "Invalid login credentials"
+        ? "E-Mail-Adresse oder Passwort stimmt nicht." : r.error.message);
+    });
+  }
+  function signup() {
+    if (!email.trim() || pw.length < 6) { setErr("E-Mail eintragen und ein Passwort mit mindestens sechs Zeichen wählen."); return; }
+    setBusy(true); setErr(""); setInfo("");
+    sb.auth.signUp({ email: email.trim(), password: pw }).then(function (r) {
+      setBusy(false);
+      if (r.error) { setErr(r.error.message); return; }
+      if (r.data.session) return;
+      setInfo("Konto angelegt. Bestätige die E-Mail, die gerade an dich rausgegangen ist, und melde dich dann an.");
+    });
+  }
+
+  return div({ className: "entrance" },
+    div({ className: "left" },
+      div({ className: "mark", style: { padding: 0 } },
+        div({ className: "glyph" }, ii(null), ii(null), ii(null), ii(null)),
+        div(null,
+          div({ className: "name" }, "Kontaktbogen"),
+          div({ className: "sub" }, "Shooting-Planung"))),
+      div(null,
+        h1(null, "Alles zum Shooting an einem Ort — auch für dein Model."),
+        para({ className: "lead", style: { marginTop: 16 } },
+          "Konzept, Moodboard, Shotlist, Outfits und der Ablauf am Set. Du planst, dein Model kommt mit einem Zugangscode dazu und bringt eigene Ideen und Referenzen mit ein. Ohne Konto, ohne App.")),
+      div({ className: "facts" },
+        div(null, bb(null, "1 Code"), span(null, "pro Planung, jederzeit erneuerbar")),
+        div(null, bb(null, "7 Bereiche"), span(null, "vom Konzept bis zum Zeitplan")),
+        div(null, bb(null, "Kein Konto"), span(null, "für das Model nötig")))),
+
+    div({ className: "right" },
+      div({ className: "seg" },
+        btn({ className: mode === "model" ? "on" : "", onClick: function () { setMode("model"); setErr(""); } }, "Ich bin das Model"),
+        btn({ className: mode === "admin" ? "on" : "", onClick: function () { setMode("admin"); setErr(""); } }, "Ich fotografiere")),
+
+      mode === "model"
+        ? frm({ className: "col", onSubmit: function (ev) { ev.preventDefault(); enter(code); } },
+            Field({ label: "Zugangscode" },
+              inp({
+                className: "inp codefield", value: code, maxLength: 8, autoFocus: true, "aria-label": "Zugangscode",
+                placeholder: "XXXXXXXX",
+                onChange: function (ev) { setCode(ev.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "")); }
+              })),
+            btn({ className: "btn btn-pri btn-wide", disabled: busy },
+              busy ? span({ className: "spin" }) : null, "Planung öffnen"),
+            para({ className: "muted", style: { fontSize: 13 } },
+              "Den Code bekommst du von deiner Fotograf:in. Er gilt für genau ein Shooting."))
+        : frm({ className: "col", onSubmit: login },
+            Field({ label: "E-Mail" },
+              inp({ className: "inp", type: "email", value: email, autoComplete: "email", placeholder: "du@studio.de",
+                onChange: function (ev) { setEmail(ev.target.value); } })),
+            Field({ label: "Passwort" },
+              inp({ className: "inp", type: "password", value: pw, autoComplete: "current-password", placeholder: "••••••••",
+                onChange: function (ev) { setPw(ev.target.value); } })),
+            btn({ className: "btn btn-pri btn-wide", disabled: busy },
+              busy ? span({ className: "spin" }) : null, "Anmelden"),
+            btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: signup, disabled: busy },
+              "Neues Konto anlegen")),
+
+      err ? div({ className: "hint bad" }, err) : null,
+      info ? div({ className: "hint" }, info) : null,
+      div({ style: { marginTop: 4 } }, h(ThemeBtn))));
+}
+
+/* ============================================================
+   Fotograf:innen-Ansicht
+   ============================================================ */
+function AdminApp(props) {
+  var a = useState([]), plans = a[0], setPlans = a[1];
+  var b = useState(null), sel = b[0], setSel = b[1];
+  var c = useState(null), data = c[0], setData = c[1];
+  var d = useState(true), loading = d[0], setLoading = d[1];
+  var e = useState(""), q = e[0], setQ = e[1];
+  var f = useState(false), newOpen = f[0], setNewOpen = f[1];
+
+  var loadList = useCallback(function () {
+    return sb.from("ps_plannings").select("*").order("created_at", { ascending: false }).then(function (r) {
+      setLoading(false);
+      var rows = r.data || [];
+      setPlans(rows);
+      return rows;
+    });
+  }, []);
+
+  var loadDetail = useCallback(function (id) {
+    if (!id) { setData(null); return Promise.resolve(); }
+    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule"];
+    return Promise.all(names.map(function (n) { return sb.from(n).select("*").eq("planning_id", id); }))
+      .then(function (res) {
+        function s(i) { return res[i].data || []; }
+        function byTime(x, y) { return String(x.created_at).localeCompare(String(y.created_at)); }
+        function byPos(x, y) { return (x.position - y.position) || byTime(x, y); }
+        setData({
+          ideas: s(0).sort(byTime),
+          images: s(1).sort(function (x, y) { return -byTime(x, y); }),
+          comments: s(2).sort(byTime),
+          checklist: s(3).sort(byPos),
+          shots: s(4).sort(byPos),
+          schedule: s(5).sort(function (x, y) { return String(x.time_from || "").localeCompare(String(y.time_from || "")) || byPos(x, y); })
+        });
+      });
+  }, []);
+
+  useEffect(function () {
+    loadList().then(function (rows) { if (rows.length) setSel(rows[0].id); });
+  }, []);
+  useEffect(function () { loadDetail(sel); }, [sel]);
+
+  var planning = null;
+  for (var i = 0; i < plans.length; i++) if (plans[i].id === sel) planning = plans[i];
+
+  var groups = useMemo(function () {
+    var needle = q.trim().toLowerCase();
+    var list = plans.filter(function (p) {
+      if (!needle) return true;
+      return (p.title + " " + (p.model_name || "") + " " + p.access_code + " " + (p.location || "")).toLowerCase().indexOf(needle) >= 0;
+    });
+    var up = [], open = [], past = [];
+    list.forEach(function (p) {
+      var n = daysUntil(p.shoot_date);
+      if (n === null) open.push(p); else if (n >= 0) up.push(p); else past.push(p);
+    });
+    up.sort(function (x, y) { return String(x.shoot_date).localeCompare(String(y.shoot_date)); });
+    past.sort(function (x, y) { return String(y.shoot_date).localeCompare(String(x.shoot_date)); });
+    return [["Anstehend", up], ["Ohne Termin", open], ["Vergangen", past]];
+  }, [plans, q]);
+
+  function created(row) {
+    setNewOpen(false);
+    loadList().then(function () { setSel(row.id); });
+    props.toast("Planung angelegt · Zugangscode " + row.access_code);
+  }
+
+  return div({ className: "app" },
+    asd({ className: "rail" },
+      div({ className: "mark" },
+        div({ className: "glyph" }, ii(null), ii(null), ii(null), ii(null)),
+        div(null,
+          div({ className: "name" }, "Kontaktbogen"),
+          div({ className: "sub" }, "Shooting-Planung"))),
+      div({ className: "rail-tools" },
+        btn({ className: "btn btn-pri btn-wide", onClick: function () { setNewOpen(true); } }, "Neue Planung"),
+        div({ className: "search" }, SearchIcon(),
+          inp({ className: "inp", value: q, placeholder: "Titel, Model, Code …",
+            onChange: function (ev) { setQ(ev.target.value); } }))),
+      div({ className: "rail-scroll" },
+        loading ? para({ className: "dim", style: { padding: "8px 10px", fontSize: 13 } }, "Lade …") : null,
+        !loading && plans.length === 0
+          ? div({ style: { padding: "6px 8px" } }, Empty({}, "Noch keine Planung angelegt."))
+          : null,
+        groups.map(function (grp) {
+          if (!grp[1].length) return null;
+          return div({ key: grp[0] },
+            div({ className: "group-head" }, span({ className: "lab" }, grp[0]), div({ className: "rule" }),
+              span({ className: "lab tnum" }, grp[1].length)),
+            grp[1].map(function (p) { return h(PlanEntry, { key: p.id, p: p, on: p.id === sel, pick: setSel }); }));
+        })),
+      div({ className: "rail-foot" },
+        span({ className: "who trunc" }, props.session.user.email),
+        h(ThemeBtn),
+        btn({ className: "btn btn-quiet btn-sm", onClick: function () { sb.auth.signOut(); } }, "Abmelden"))),
+
+    div(null,
+      planning
+        ? h(PlanningView, {
+            key: planning.id, planning: planning, data: data,
+            reloadList: loadList, reloadDetail: function () { return loadDetail(planning.id); },
+            clearSel: function () { setSel(null); }, toast: props.toast
+          })
+        : div({ className: "content" }, Empty({}, "Wähle links eine Planung aus oder lege eine neue an."))),
+
+    newOpen ? h(NewPlanning, { session: props.session, close: function () { setNewOpen(false); }, done: created, toast: props.toast }) : null);
+}
+
+function PlanEntry(props) {
+  var p = props.p;
+  var dd2 = p.shoot_date ? new Date(p.shoot_date + "T00:00:00") : null;
+  var col = p.status === "bestaetigt" || p.status === "erledigt" ? "var(--ok)"
+    : p.status === "abgesagt" ? "var(--crit)"
+    : p.status === "geplant" ? "var(--accent)" : "var(--line-3)";
+  return btn({ className: "entry" + (props.on ? " on" : ""), onClick: function () { props.pick(p.id); } },
+    div({ className: "e-date" },
+      bb(null, dd2 ? String(dd2.getDate()) : "—"),
+      span(null, dd2 ? MONTHS[dd2.getMonth()] : "offen")),
+    div({ style: { minWidth: 0 } },
+      div({ className: "e-title trunc" }, span({ className: "dot", style: { background: col } }), span({ className: "trunc" }, p.title)),
+      div({ className: "e-meta trunc" }, (p.model_name || "Model offen") + " · " + p.access_code)));
+}
+
+function NewPlanning(props) {
+  var a = useState(""), title = a[0], setTitle = a[1];
+  var b = useState(""), model = b[0], setModel = b[1];
+  var c = useState(""), date = c[0], setDate = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+
+  function submit(ev) {
+    ev.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    sb.rpc("ps_generate_code").then(function (r) {
+      return sb.from("ps_plannings").insert({
+        owner_id: props.session.user.id, title: title.trim(),
+        model_name: model.trim() || null, shoot_date: date || null, access_code: r.data
+      }).select().single();
+    }).then(function (r) {
+      setBusy(false);
+      if (r.error) { props.toast("Konnte nicht angelegt werden: " + r.error.message); return; }
+      props.done(r.data);
+    });
+  }
+
+  return div({ className: "scrim", onMouseDown: function (ev) { if (ev.target === ev.currentTarget) props.close(); } },
+    frm({ className: "sheetbox", onSubmit: submit },
+      div({ className: "hd", style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line)" } },
+        h3(null, "Neue Planung"),
+        btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: props.close }, "Schließen")),
+      div({ style: { padding: 16, display: "flex", flexDirection: "column", gap: 14 } },
+        Field({ label: "Titel" },
+          inp({ className: "inp", value: title, autoFocus: true, placeholder: "Herbstserie im Hafen",
+            onChange: function (ev) { setTitle(ev.target.value); } })),
+        div({ className: "g2" },
+          Field({ label: "Model" },
+            inp({ className: "inp", value: model, placeholder: "Name",
+              onChange: function (ev) { setModel(ev.target.value); } })),
+          Field({ label: "Shootingtag" },
+            inp({ className: "inp", type: "date", value: date,
+              onChange: function (ev) { setDate(ev.target.value); } }))),
+        para({ className: "muted", style: { fontSize: 12.5 } },
+          "Der Zugangscode für das Model wird beim Anlegen automatisch erzeugt."),
+        btn({ className: "btn btn-pri btn-wide", disabled: busy },
+          busy ? span({ className: "spin" }) : null, "Anlegen"))));
+}
+
+/* ---------- Planungsansicht ---------- */
+function PlanningView(props) {
+  var a = useState("uebersicht"), tab = a[0], setTab = a[1];
+  var p = props.planning, d = props.data;
+  var openChecks = d ? d.checklist.filter(function (x) { return !x.done; }).length : 0;
+
+  var tabs = [
+    ["uebersicht", "Übersicht", 0],
+    ["moodboard", "Moodboard", d ? d.images.length : 0],
+    ["ideen", "Ideen", d ? d.ideas.length : 0],
+    ["shotlist", "Shotlist", d ? d.shots.length : 0],
+    ["checkliste", "Checkliste", openChecks],
+    ["zeitplan", "Zeitplan", d ? d.schedule.length : 0],
+    ["absprachen", "Absprachen", d ? d.comments.length : 0]
+  ];
+
+  function copyCode() {
+    copyText(shareUrl(p.access_code), function (ok) {
+      props.toast(ok ? "Zugangslink kopiert" : "Kopieren blockiert · Code: " + p.access_code);
+    });
+  }
+
+  return div(null,
+    div({ className: "topbar" },
+      div({ className: "topbar-in" },
+        div({ style: { minWidth: 0 } },
+          div({ className: "crumb" }, countdown(p.shoot_date) + " · " + fmtShort(p.shoot_date)),
+          h1({ className: "trunc" }, p.title)),
+        div({ className: "sp" }),
+        Status({ value: p.status }),
+        btn({ className: "btn btn-sm", onClick: copyCode }, "Zugangslink kopieren"))),
+    div({ className: "tabs" },
+      tabs.map(function (t) {
+        return btn({ key: t[0], className: "tab" + (tab === t[0] ? " on" : ""), onClick: function () { setTab(t[0]); } },
+          t[1], t[2] ? span({ className: "cnt tnum" }, t[2]) : null);
+      })),
+    div({ className: "content" },
+      !d ? Empty({}, "Lade Planungsdaten …")
+        : tab === "uebersicht" ? h(Overview, { planning: p, data: d, reloadList: props.reloadList, clearSel: props.clearSel, toast: props.toast })
+        : tab === "moodboard" ? h(Moodboard, { planning: p, images: d.images, admin: true, reload: props.reloadDetail, toast: props.toast })
+        : tab === "ideen" ? h(Ideas, { planning: p, ideas: d.ideas, admin: true, reload: props.reloadDetail, toast: props.toast })
+        : tab === "shotlist" ? h(Shotlist, { planning: p, shots: d.shots, admin: true, reload: props.reloadDetail, toast: props.toast })
+        : tab === "checkliste" ? h(Checklist, { planning: p, items: d.checklist, admin: true, reload: props.reloadDetail, toast: props.toast })
+        : tab === "zeitplan" ? h(Schedule, { planning: p, rows: d.schedule, admin: true, reload: props.reloadDetail, toast: props.toast })
+        : h(Chat, { planning: p, comments: d.comments, admin: true, reload: props.reloadDetail, toast: props.toast })));
+}
+
+/* ---------- Übersicht ---------- */
+function Overview(props) {
+  var p = props.planning, d = props.data;
+  var a = useState(null), form = a[0], setForm = a[1];
+  var b = useState(false), busy = b[0], setBusy = b[1];
+  useEffect(function () {
+    setForm({
+      title: p.title || "", model_name: p.model_name || "", model_contact: p.model_contact || "",
+      shoot_date: p.shoot_date || "", shoot_time: p.shoot_time || "", location: p.location || "",
+      concept: p.concept || "", status: p.status
+    });
+  }, [p.id, p.updated_at]);
+  if (!form) return null;
+  function set(k, v) { setForm(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  function save() {
+    setBusy(true);
+    sb.from("ps_plannings").update({
+      title: form.title, model_name: form.model_name || null, model_contact: form.model_contact || null,
+      shoot_date: form.shoot_date || null, shoot_time: form.shoot_time || null,
+      location: form.location || null, concept: form.concept || null, status: form.status
+    }).eq("id", p.id).then(function (r) {
+      setBusy(false);
+      if (r.error) props.toast("Speichern fehlgeschlagen: " + r.error.message);
+      else { props.toast("Gespeichert"); props.reloadList(); }
+    });
+  }
+  function newCode() {
+    if (!confirm("Neuen Code erzeugen? Der bisherige Code funktioniert danach nicht mehr.")) return;
+    sb.rpc("ps_generate_code").then(function (r) {
+      return sb.from("ps_plannings").update({ access_code: r.data }).eq("id", p.id).then(function (u) {
+        if (u.error) props.toast("Fehler: " + u.error.message);
+        else { props.toast("Neuer Zugangscode: " + r.data); props.reloadList(); }
+      });
+    });
+  }
+  function toggleCode() {
+    sb.from("ps_plannings").update({ code_active: !p.code_active }).eq("id", p.id).then(function (r) {
+      if (!r.error) { props.toast(p.code_active ? "Zugang gesperrt" : "Zugang wieder freigegeben"); props.reloadList(); }
+    });
+  }
+  function del() {
+    if (!confirm("Planung „" + p.title + "“ mit allen Ideen, Bildern und Absprachen löschen?")) return;
+    sb.from("ps_plannings").delete().eq("id", p.id).then(function (r) {
+      if (r.error) props.toast("Fehler: " + r.error.message);
+      else { props.clearSel(); props.reloadList(); props.toast("Planung gelöscht"); }
+    });
+  }
+  function copy(t, what) {
+    copyText(t, function (ok) { props.toast(ok ? what + " kopiert" : "Kopieren blockiert: " + t); });
+  }
+
+  var checksDone = d.checklist.filter(function (x) { return x.done; }).length;
+  var shotsFix = d.shots.filter(function (x) { return x.status === "bestaetigt" || x.status === "erledigt"; }).length;
+  var totalUnits = d.checklist.length + d.shots.length;
+  var readiness = totalUnits ? (checksDone + shotsFix) / totalUnits : 0;
+
+  return div({ className: "split" },
+    div({ className: "cards" },
+      Card({ title: "Konzept", aside: null },
+        txa({ className: "inp serif", rows: 7, value: form.concept, style: { fontSize: 15.5, lineHeight: 1.6 },
+          placeholder: "Stimmung, Bildsprache, Licht, Farbwelt, Referenzen …",
+          onChange: function (ev) { set("concept", ev.target.value); } })),
+
+      Card({ title: "Eckdaten" },
+        div({ className: "g2" },
+          Field({ label: "Titel" }, inp({ className: "inp", value: form.title, onChange: function (ev) { set("title", ev.target.value); } })),
+          Field({ label: "Status" },
+            sel({ className: "inp", value: form.status, onChange: function (ev) { set("status", ev.target.value); } },
+              STATUS.map(function (s) { return opt({ key: s[0], value: s[0] }, s[1]); }))),
+          Field({ label: "Model" }, inp({ className: "inp", value: form.model_name, onChange: function (ev) { set("model_name", ev.target.value); } })),
+          Field({ label: "Kontakt" }, inp({ className: "inp", value: form.model_contact, placeholder: "Telefon oder E-Mail", onChange: function (ev) { set("model_contact", ev.target.value); } })),
+          Field({ label: "Shootingtag" }, inp({ className: "inp", type: "date", value: form.shoot_date, onChange: function (ev) { set("shoot_date", ev.target.value); } })),
+          Field({ label: "Zeitfenster" }, inp({ className: "inp", value: form.shoot_time, placeholder: "17:30 – 19:15", onChange: function (ev) { set("shoot_time", ev.target.value); } }))),
+        div({ style: { marginTop: 14 } },
+          Field({ label: "Location" }, inp({ className: "inp", value: form.location, placeholder: "Alter Hafen, Kai 4", onChange: function (ev) { set("location", ev.target.value); } }))),
+        hr({ className: "sep" }),
+        div({ className: "row", style: { justifyContent: "space-between" } },
+          btn({ className: "btn btn-pri", onClick: save, disabled: busy }, busy ? span({ className: "spin" }) : null, "Änderungen speichern"),
+          btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: del }, "Planung löschen")))),
+
+    div({ className: "cards" },
+      Card({ title: "Zugang für das Model", aside: span({ className: "st " + (p.code_active ? "st-bestaetigt" : "st-verworfen") }, ii(null), p.code_active ? "aktiv" : "gesperrt") },
+        div({ className: "access" },
+          div({ className: "val" }, p.access_code),
+          div({ className: "acts" },
+            btn({ onClick: function () { copy(p.access_code, "Code"); } }, "Code"),
+            btn({ onClick: function () { copy(shareUrl(p.access_code), "Link"); } }, "Link"),
+            btn({ onClick: toggleCode }, p.code_active ? "Sperren" : "Freigeben"),
+            btn({ onClick: newCode }, "Neu"))),
+        para({ className: "muted", style: { fontSize: 12.5, marginTop: 12 } },
+          "Mit diesem Code sieht dein Model die Planung, steuert Ideen und Referenzbilder bei, hakt seine Aufgaben ab und stellt Fragen.")),
+
+      Card({ title: "Vorbereitung" },
+        div({ className: "ringwrap" },
+          Ring({ value: readiness }),
+          div(null,
+            div({ className: "big" }, Math.round(readiness * 100) + " %"),
+            para({ className: "dim", style: { fontSize: 12.5 } }, "abgeschlossen"))),
+        hr({ className: "sep" }),
+        div({ className: "col", style: { gap: 14 } },
+          Meter({ label: "Checkliste erledigt", value: checksDone, total: d.checklist.length }),
+          Meter({ label: "Shots bestätigt", value: shotsFix, total: d.shots.length }),
+          Meter({ label: "Ideen aufgenommen", value: d.ideas.filter(function (x) { return x.status !== "idee" && x.status !== "verworfen"; }).length, total: d.ideas.length }))),
+
+      Card({ title: "Auf einen Blick" },
+        dl({ className: "dl" },
+          div(null, dt({ className: "lab" }, "Termin"), dd(null, fmtDate(p.shoot_date))),
+          div(null, dt({ className: "lab" }, "Zeit"), dd(null, p.shoot_time || "—")),
+          div(null, dt({ className: "lab" }, "Ort"), dd(null, p.location || "—")),
+          div(null, dt({ className: "lab" }, "Model"), dd(null, p.model_name || "—")),
+          div(null, dt({ className: "lab" }, "Kontakt"), dd(null, p.model_contact || "—")),
+          div(null, dt({ className: "lab" }, "Bilder"), dd({ className: "tnum" }, d.images.length))))));
+}
+
+/* ---------- Moodboard ---------- */
+function Moodboard(props) {
+  var admin = !!props.admin, p = props.planning, images = props.images;
+  var a = useState("moodboard"), cat = a[0], setCat = a[1];
+  var b = useState(""), caption = b[0], setCaption = b[1];
+  var c = useState(""), url = c[0], setUrl = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+  var e = useState("alle"), filter = e[0], setFilter = e[1];
+  var fileRef = useRef(null);
+  var code = props.code || p.access_code;
+
+  var shown = filter === "alle" ? images : images.filter(function (x) { return x.category === filter; });
+
+  function record(rec) {
+    var q = admin
+      ? sb.from("ps_images").insert({
+          planning_id: p.id, storage_path: rec.path || null, url: rec.url,
+          caption: caption || null, category: cat, author_role: "admin", author_name: "Fotograf:in" })
+      : sb.rpc("ps_add_image", {
+          p_code: code, p_author: props.authorName, p_url: rec.url,
+          p_storage_path: rec.path || null, p_caption: caption || null, p_category: cat });
+    return Promise.resolve(q).then(function (r) { if (r && r.error) throw r.error; return r; });
+  }
+
+  function onFiles(list) {
+    if (!list || !list.length) return;
+    setBusy(true);
+    var files = [].slice.call(list, 0, 20);
+    var chain = Promise.resolve();
+    files.forEach(function (file) {
+      chain = chain.then(function () { return uploadFile(file, code); }).then(record);
+    });
+    chain.then(function () {
+      setBusy(false); setCaption(""); props.reload(); props.toast(files.length + " Bild(er) hinzugefügt");
+      if (fileRef.current) fileRef.current.value = "";
+    }, function (err) {
+      setBusy(false); props.toast("Upload fehlgeschlagen: " + (err.message || err));
+      if (fileRef.current) fileRef.current.value = "";
+    });
+  }
+
+  function addUrl(ev) {
+    ev.preventDefault();
+    if (!url.trim()) return;
+    setBusy(true);
+    Promise.resolve(record({ url: url.trim() })).then(function () {
+      setBusy(false); setUrl(""); setCaption(""); props.reload(); props.toast("Bild verlinkt");
+    }, function (err) { setBusy(false); props.toast("Fehler: " + (err.message || err)); });
+  }
+
+  function remove(img) {
+    if (!confirm("Bild entfernen?")) return;
+    var pre = img.storage_path ? sb.storage.from(BUCKET).remove([img.storage_path]) : Promise.resolve();
+    pre.then(function () { return sb.from("ps_images").delete().eq("id", img.id); }).then(props.reload);
+  }
+
+  return div({ className: "cards" },
+    Card({ title: "Referenz hinzufügen", aside: span({ className: "lab" }, "JPG · PNG · WEBP · bis 10 MB") },
+      div({ className: "g2" },
+        Field({ label: "Kategorie" },
+          sel({ className: "inp", value: cat, onChange: function (ev) { setCat(ev.target.value); } },
+            IMG_CAT.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
+        Field({ label: "Bildunterschrift" },
+          inp({ className: "inp", value: caption, placeholder: "Seitliches Fensterlicht, harte Kante",
+            onChange: function (ev) { setCaption(ev.target.value); } }))),
+      div({ className: "row", style: { marginTop: 14, alignItems: "center" } },
+        inp({ ref: fileRef, type: "file", accept: "image/*", multiple: true, style: { display: "none" },
+          onChange: function (ev) { onFiles(ev.target.files); } }),
+        btn({ className: "btn btn-pri", disabled: busy, onClick: function () { if (fileRef.current) fileRef.current.click(); } },
+          busy ? span({ className: "spin" }) : null, "Dateien wählen"),
+        frm({ className: "row", style: { flex: 1, minWidth: 240, flexWrap: "nowrap" }, onSubmit: addUrl },
+          inp({ className: "inp", style: { flex: 1 }, value: url, placeholder: "… oder Bild-URL einfügen",
+            onChange: function (ev) { setUrl(ev.target.value); } }),
+          btn({ className: "btn", disabled: busy }, "Verlinken")))),
+
+    Card({
+      title: "Kontaktbogen",
+      aside: div({ className: "chips" },
+        [["alle", "Alle"]].concat(IMG_CAT).map(function (x) {
+          return btn({ key: x[0], className: "chip" + (filter === x[0] ? " on" : ""), onClick: function () { setFilter(x[0]); } }, x[1]);
+        }))
+    },
+      shown.length === 0
+        ? Empty({}, "Noch keine Bilder in dieser Ansicht. Lade Referenzen hoch — sie erscheinen hier als Kontaktbogen.")
+        : div({ className: "gal" },
+            shown.map(function (img, i) {
+              return figure({ key: img.id, className: "shot", style: { margin: 0 } },
+                im({ className: "ph", src: img.url, alt: img.caption || "Referenzbild", loading: "lazy" }),
+                span({ className: "no" }, String(i + 1).padStart(2, "0")),
+                admin ? btn({ className: "rm", title: "Entfernen", onClick: function () { remove(img); } }, "×") : null,
+                figcap({ className: "info" },
+                  img.caption ? div({ className: "t" }, img.caption) : null,
+                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Fotograf:in" : "Model")))));
+            }))));
+}
+
+/* ---------- Ideen ---------- */
+function Ideas(props) {
+  var admin = !!props.admin, p = props.planning, ideas = props.ideas;
+  var a = useState(""), title = a[0], setTitle = a[1];
+  var b = useState(""), desc = b[0], setDesc = b[1];
+  var c = useState("allgemein"), cat = c[0], setCat = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+  var e = useState("alle"), view = e[0], setView = e[1];
+
+  function add(ev) {
+    ev.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    var q = admin
+      ? sb.from("ps_ideas").insert({
+          planning_id: p.id, title: title.trim(), description: desc || null,
+          category: cat, author_role: "admin", author_name: "Fotograf:in" })
+      : sb.rpc("ps_add_idea", {
+          p_code: props.code, p_author: props.authorName, p_title: title.trim(),
+          p_description: desc || null, p_category: cat, p_image_url: null });
+    Promise.resolve(q).then(function (r) {
+      setBusy(false);
+      if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
+      setTitle(""); setDesc(""); props.reload(); props.toast("Idee gespeichert");
+    });
+  }
+  function setStatus(idea, st) { sb.from("ps_ideas").update({ status: st }).eq("id", idea.id).then(props.reload); }
+  function remove(idea) {
+    if (!confirm("Idee löschen?")) return;
+    var q = admin ? sb.from("ps_ideas").delete().eq("id", idea.id)
+                  : sb.rpc("ps_delete_idea", { p_code: props.code, p_idea_id: idea.id });
+    Promise.resolve(q).then(props.reload);
+  }
+
+  var filters = [["alle", "Alle"], ["model", "Vom Model"], ["admin", "Von der Fotograf:in"], ["offen", "Noch offen"]];
+  var shown = ideas.filter(function (x) {
+    if (view === "model") return x.author_role === "model";
+    if (view === "admin") return x.author_role === "admin";
+    if (view === "offen") return x.status === "idee";
+    return true;
+  });
+
+  return div({ className: "cards" },
+    Card({ title: "Idee festhalten" },
+      frm({ className: "col", onSubmit: add },
+        div({ className: "g2" },
+          Field({ label: "Titel" },
+            inp({ className: "inp", value: title, placeholder: "Silhouette gegen die Hafenlichter",
+              onChange: function (ev) { setTitle(ev.target.value); } })),
+          Field({ label: "Bereich" },
+            sel({ className: "inp", value: cat, onChange: function (ev) { setCat(ev.target.value); } },
+              IDEA_CAT.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); })))),
+        Field({ label: "Beschreibung" },
+          txa({ className: "inp", rows: 3, value: desc, placeholder: "Worum geht es? Was brauchen wir dafür?",
+            onChange: function (ev) { setDesc(ev.target.value); } })),
+        div(null, btn({ className: "btn btn-pri", disabled: busy }, busy ? span({ className: "spin" }) : null, "Hinzufügen")))),
+
+    Card({
+      title: "Ideen", flush: true,
+      aside: div({ className: "chips" }, filters.map(function (x) {
+        return btn({ key: x[0], className: "chip" + (view === x[0] ? " on" : ""), onClick: function () { setView(x[0]); } }, x[1]);
+      }))
+    },
+      shown.length === 0
+        ? div({ style: { padding: 16 } }, Empty({}, "Hier ist noch nichts eingetragen."))
+        : div({ className: "rows" },
+            shown.map(function (x) {
+              return div({ key: x.id, className: "rw" },
+                div({ style: { flex: 1, minWidth: 0 } },
+                  div({ className: "row", style: { justifyContent: "space-between", alignItems: "baseline", gap: 10 } },
+                    h4({ style: { fontSize: 13.5, fontWeight: 500 } }, x.title),
+                    Status({ value: x.status, list: IDEA_STATUS })),
+                  x.description ? para({ className: "sub", style: { fontSize: 13, color: "var(--ink-2)", marginTop: 4, whiteSpace: "pre-wrap" } }, x.description) : null,
+                  div({ className: "tagrow" },
+                    span({ className: "tag" }, lbl(IDEA_CAT, x.category)),
+                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Fotograf:in" : "Model")),
+                    span({ className: "tag tnum" }, fmtTs(x.created_at)))),
+                div({ className: "row", style: { gap: 6, flexWrap: "nowrap" } },
+                  admin ? sel({ className: "inp inp-sm", value: x.status, onChange: function (ev) { setStatus(x, ev.target.value); } },
+                    IDEA_STATUS.map(function (s) { return opt({ key: s[0], value: s[0] }, s[1]); })) : null,
+                  (admin || x.author_role === "model")
+                    ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { remove(x); }, title: "Löschen" }, "×") : null));
+            }))));
+}
+
+/* ---------- Shotlist ---------- */
+function Shotlist(props) {
+  var admin = !!props.admin, p = props.planning, shots = props.shots;
+  var a = useState({ title: "", description: "", outfit: "", location: "", reference_url: "" }), f = a[0], setF = a[1];
+  var b = useState(false), busy = b[0], setBusy = b[1];
+  function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  function add(ev) {
+    ev.preventDefault();
+    if (!f.title.trim()) return;
+    setBusy(true);
+    sb.from("ps_shots").insert({
+      planning_id: p.id, title: f.title.trim(), description: f.description || null,
+      outfit: f.outfit || null, location: f.location || null,
+      reference_url: f.reference_url || null, position: shots.length
+    }).then(function (r) {
+      setBusy(false);
+      if (r.error) { props.toast("Fehler: " + r.error.message); return; }
+      setF({ title: "", description: "", outfit: "", location: "", reference_url: "" });
+      props.reload();
+    });
+  }
+  function setStatus(s, st) { sb.from("ps_shots").update({ status: st }).eq("id", s.id).then(props.reload); }
+  function remove(s) { if (confirm("Shot löschen?")) sb.from("ps_shots").delete().eq("id", s.id).then(props.reload); }
+  function move(s, dir) {
+    var idx = -1;
+    for (var i = 0; i < shots.length; i++) if (shots[i].id === s.id) idx = i;
+    var j = idx + dir;
+    if (idx < 0 || j < 0 || j >= shots.length) return;
+    Promise.all([
+      sb.from("ps_shots").update({ position: j }).eq("id", s.id),
+      sb.from("ps_shots").update({ position: idx }).eq("id", shots[j].id)
+    ]).then(props.reload);
+  }
+
+  return div({ className: "cards" },
+    admin ? Card({ title: "Einstellung ergänzen", aside: span({ className: "lab" }, "Reihenfolge = Ablauf am Set") },
+      frm({ className: "col", onSubmit: add },
+        div({ className: "g2" },
+          Field({ label: "Titel" }, inp({ className: "inp", value: f.title, placeholder: "Halbnah, Blick über die Schulter", onChange: function (ev) { set("title", ev.target.value); } })),
+          Field({ label: "Outfit" }, inp({ className: "inp", value: f.outfit, placeholder: "Mantel, dunkle Jeans", onChange: function (ev) { set("outfit", ev.target.value); } })),
+          Field({ label: "Ort / Setup" }, inp({ className: "inp", value: f.location, placeholder: "Kai 4, Reling", onChange: function (ev) { set("location", ev.target.value); } })),
+          Field({ label: "Referenzbild-URL" }, inp({ className: "inp", value: f.reference_url, placeholder: "https://…", onChange: function (ev) { set("reference_url", ev.target.value); } }))),
+        Field({ label: "Notiz" }, txa({ className: "inp", rows: 2, value: f.description, placeholder: "Pose, Blickrichtung, Licht, Brennweite", onChange: function (ev) { set("description", ev.target.value); } })),
+        div(null, btn({ className: "btn btn-pri", disabled: busy }, "Zur Shotlist")))) : null,
+
+    Card({ title: "Shotlist", flush: true, aside: span({ className: "lab tnum" }, shots.length + " Einstellungen") },
+      shots.length === 0
+        ? div({ style: { padding: 16 } }, Empty({}, "Noch keine Einstellungen geplant."))
+        : div({ className: "rows" },
+            shots.map(function (s, i) {
+              return div({ key: s.id, className: "slot" },
+                span({ className: "idx" }, String(i + 1).padStart(2, "0")),
+                s.reference_url ? im({ className: "thumb", src: s.reference_url, alt: "", loading: "lazy" })
+                  : div({ className: "thumb" }),
+                div({ style: { minWidth: 0 } },
+                  h4(null, s.title),
+                  s.description ? para({ className: "sub" }, s.description) : null,
+                  div({ className: "tagrow" },
+                    s.outfit ? span({ className: "tag" }, "Outfit · " + s.outfit) : null,
+                    s.location ? span({ className: "tag" }, "Ort · " + s.location) : null)),
+                div({ className: "row", style: { gap: 6, flexWrap: "nowrap", alignItems: "center" } },
+                  admin
+                    ? sel({ className: "inp inp-sm", value: s.status, onChange: function (ev) { setStatus(s, ev.target.value); } },
+                        SHOT_STATUS.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))
+                    : Status({ value: s.status, list: SHOT_STATUS }),
+                  admin ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { move(s, -1); }, title: "Nach oben" }, "↑") : null,
+                  admin ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { move(s, 1); }, title: "Nach unten" }, "↓") : null,
+                  admin ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { remove(s); }, title: "Löschen" }, "×") : null));
+            }))));
+}
+
+/* ---------- Checkliste ---------- */
+function Checklist(props) {
+  var admin = !!props.admin, p = props.planning, items = props.items;
+  var a = useState(""), title = a[0], setTitle = a[1];
+  var b = useState("beide"), who = b[0], setWho = b[1];
+  var c = useState("allgemein"), cat = c[0], setCat = c[1];
+
+  function add(ev) {
+    ev.preventDefault();
+    if (!title.trim()) return;
+    sb.from("ps_checklist").insert({
+      planning_id: p.id, title: title.trim(), assignee: who, category: cat, position: items.length
+    }).then(function (r) {
+      if (r.error) { props.toast("Fehler: " + r.error.message); return; }
+      setTitle(""); props.reload();
+    });
+  }
+  function toggle(it) {
+    if (!admin && it.assignee === "fotograf") return;
+    var q = admin
+      ? sb.from("ps_checklist").update({ done: !it.done }).eq("id", it.id)
+      : sb.rpc("ps_toggle_check", { p_code: props.code, p_item_id: it.id, p_done: !it.done });
+    Promise.resolve(q).then(function (r) {
+      if (r && r.error) { props.toast("Das kann nur die Fotograf:in abhaken."); return; }
+      props.reload();
+    });
+  }
+  function remove(it) { sb.from("ps_checklist").delete().eq("id", it.id).then(props.reload); }
+
+  return div({ className: "cards" },
+    admin ? Card({ title: "Punkt hinzufügen" },
+      frm({ className: "row", onSubmit: add, style: { alignItems: "flex-end" } },
+        div({ style: { flex: 1, minWidth: 200 } },
+          Field({ label: "Was ist zu tun" },
+            inp({ className: "inp", value: title, placeholder: "Zwei Ersatzakkus laden", onChange: function (ev) { setTitle(ev.target.value); } }))),
+        Field({ label: "Wer" },
+          sel({ className: "inp", value: who, onChange: function (ev) { setWho(ev.target.value); } },
+            ASSIGNEE.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
+        Field({ label: "Bereich" },
+          sel({ className: "inp", value: cat, onChange: function (ev) { setCat(ev.target.value); } },
+            CHECK_CAT.map(function (x) { return opt({ key: x[0], value: x[0] }, x[1]); }))),
+        btn({ className: "btn btn-pri" }, "Hinzufügen"))) : null,
+
+    ASSIGNEE.map(function (grp) {
+      var list = items.filter(function (x) { return x.assignee === grp[0]; });
+      if (!list.length) return null;
+      var done = list.filter(function (x) { return x.done; }).length;
+      var locked = !admin && grp[0] === "fotograf";
+      return Card({
+        key: grp[0], title: grp[1], flush: true,
+        aside: div({ style: { width: 150 } }, Meter({ label: "", value: done, total: list.length }))
+      },
+        div({ className: "rows" },
+          list.map(function (it) {
+            return lb({ key: it.id, className: "chk" + (it.done ? " done" : ""), "data-locked": locked ? "1" : "0" },
+              inp({ type: "checkbox", checked: it.done, disabled: locked, onChange: function () { toggle(it); } }),
+              div({ style: { flex: 1, minWidth: 0 } },
+                div({ className: "t" }, it.title),
+                span({ className: "tag", style: { marginTop: 4, display: "inline-block" } }, lbl(CHECK_CAT, it.category))),
+              admin ? btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: function (ev) { ev.preventDefault(); remove(it); } }, "×") : null);
+          })));
+    }),
+
+    items.length === 0 ? Card({ title: "Checkliste" }, Empty({}, "Noch keine Punkte auf der Liste.")) : null);
+}
+
+/* ---------- Zeitplan ---------- */
+function Schedule(props) {
+  var admin = !!props.admin, p = props.planning, rows = props.rows;
+  var a = useState({ time_from: "", time_to: "", title: "", notes: "" }), f = a[0], setF = a[1];
+  function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  function add(ev) {
+    ev.preventDefault();
+    if (!f.title.trim()) return;
+    sb.from("ps_schedule").insert({
+      planning_id: p.id, time_from: f.time_from || null, time_to: f.time_to || null,
+      title: f.title.trim(), notes: f.notes || null, position: rows.length
+    }).then(function (r) {
+      if (r.error) { props.toast("Fehler: " + r.error.message); return; }
+      setF({ time_from: "", time_to: "", title: "", notes: "" }); props.reload();
+    });
+  }
+  function remove(r) { sb.from("ps_schedule").delete().eq("id", r.id).then(props.reload); }
+
+  return div({ className: "cards" },
+    admin ? Card({ title: "Programmpunkt" },
+      frm({ className: "col", onSubmit: add },
+        div({ className: "row", style: { alignItems: "flex-end" } },
+          Field({ label: "Von" }, inp({ className: "inp", style: { width: 116 }, type: "time", value: f.time_from, onChange: function (ev) { set("time_from", ev.target.value); } })),
+          Field({ label: "Bis" }, inp({ className: "inp", style: { width: 116 }, type: "time", value: f.time_to, onChange: function (ev) { set("time_to", ev.target.value); } })),
+          div({ style: { flex: 1, minWidth: 200 } },
+            Field({ label: "Was passiert" }, inp({ className: "inp", value: f.title, placeholder: "Treffpunkt Parkplatz Nord", onChange: function (ev) { set("title", ev.target.value); } }))),
+          btn({ className: "btn btn-pri" }, "Eintragen")),
+        Field({ label: "Notiz" }, inp({ className: "inp", value: f.notes, placeholder: "Bitte geschminkt kommen", onChange: function (ev) { set("notes", ev.target.value); } })))) : null,
+
+    Card({ title: "Ablauf am Shootingtag", flush: true, aside: span({ className: "lab" }, fmtShort(p.shoot_date)) },
+      rows.length === 0
+        ? div({ style: { padding: 16 } }, Empty({}, "Noch kein Ablaufplan."))
+        : div({ className: "tl" },
+            rows.map(function (r) {
+              return div({ key: r.id, className: "tl-row" },
+                div({ className: "tm" }, (r.time_from || "—") + (r.time_to ? " – " + r.time_to : "")),
+                div({ className: "dot" }),
+                div({ className: "bdy" },
+                  h4({ style: { fontSize: 13.5, fontWeight: 500 } }, r.title),
+                  r.notes ? para({ className: "muted", style: { fontSize: 13, marginTop: 3 } }, r.notes) : null,
+                  admin ? btn({ className: "btn btn-quiet btn-sm", style: { marginTop: 6 }, onClick: function () { remove(r); } }, "Entfernen") : null));
+            }))));
+}
+
+/* ---------- Absprachen ---------- */
+function Chat(props) {
+  var admin = !!props.admin;
+  var a = useState(""), body = a[0], setBody = a[1];
+  var b = useState(false), busy = b[0], setBusy = b[1];
+  var endRef = useRef(null);
+  useEffect(function () { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "nearest" }); }, [props.comments.length]);
+
+  function send(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (!body.trim()) return;
+    setBusy(true);
+    var q = admin
+      ? sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(), author_role: "admin", author_name: "Fotograf:in" })
+      : sb.rpc("ps_add_comment", { p_code: props.code, p_author: props.authorName, p_body: body.trim(), p_idea_id: null });
+    Promise.resolve(q).then(function (r) {
+      setBusy(false);
+      if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
+      setBody(""); props.reload();
+    });
+  }
+
+  var mine = admin ? "admin" : "model";
+
+  return Card({ title: "Absprachen", flush: true, aside: span({ className: "lab tnum" }, props.comments.length + " Nachrichten") },
+    div({ className: "thread" },
+      props.comments.length === 0
+        ? Empty({}, "Noch nichts besprochen. Schreib die erste Nachricht.")
+        : props.comments.map(function (cm) {
+            return div({ key: cm.id, className: "bubble" + (cm.author_role === mine ? " self" : "") },
+              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Fotograf:in" : "Model")), " · " + fmtTs(cm.created_at)),
+              div({ className: "txt" }, cm.body));
+          }),
+      div({ ref: endRef })),
+    frm({ className: "composer", onSubmit: send },
+      txa({
+        className: "inp", rows: 2, value: body, style: { flex: 1, minHeight: 52 },
+        placeholder: "Nachricht schreiben … (⌘/Strg + Enter sendet)",
+        onChange: function (ev) { setBody(ev.target.value); },
+        onKeyDown: function (ev) { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) send(ev); }
+      }),
+      btn({ className: "btn btn-pri", disabled: busy }, "Senden")));
+}
+
+/* ============================================================
+   Model-Ansicht
+   ============================================================ */
+function ModelApp(props) {
+  var code = props.code;
+  var a = useState(props.initial), bundle = a[0], setBundle = a[1];
+  var b = useState("uebersicht"), tab = b[0], setTab = b[1];
+  var c = useState(function () { return store.get("ps_name_" + code) || ""; }), name = c[0], setName = c[1];
+  var d = useState(function () { return !!store.get("ps_name_" + code); }), named = d[0], setNamed = d[1];
+
+  var reload = useCallback(function () {
+    return sb.rpc("ps_load", { p_code: code }).then(function (r) { if (!r.error && r.data) setBundle(r.data); });
+  }, [code]);
+
+  useEffect(function () {
+    function onFocus() { reload(); }
+    window.addEventListener("focus", onFocus);
+    var iv = setInterval(reload, 30000);
+    return function () { window.removeEventListener("focus", onFocus); clearInterval(iv); };
+  }, [reload]);
+
+  var p = bundle.planning;
+
+  if (!named) {
+    return div({ className: "entrance", style: { gridTemplateColumns: "1fr" } },
+      div({ className: "right", style: { maxWidth: 420, margin: "0 auto", width: "100%" } },
+        span({ className: "lab" }, "Willkommen"),
+        h2({ className: "serif", style: { fontSize: 27, letterSpacing: "-.02em" } }, p.title),
+        para({ className: "muted" }, "Wie sollen deine Ideen und Nachrichten unterschrieben werden?"),
+        frm({ className: "col", onSubmit: function (ev) {
+            ev.preventDefault();
+            var n = name.trim() || "Model";
+            store.set("ps_name_" + code, n); setName(n); setNamed(true);
+          } },
+          Field({ label: "Dein Name" },
+            inp({ className: "inp", value: name, autoFocus: true, placeholder: "z. B. Mira",
+              onChange: function (ev) { setName(ev.target.value); } })),
+          btn({ className: "btn btn-pri btn-wide" }, "Los geht's"))));
+  }
+
+  var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
+  var tabs = [
+    ["uebersicht", "Übersicht", 0],
+    ["moodboard", "Moodboard", bundle.images.length],
+    ["ideen", "Ideen", bundle.ideas.length],
+    ["shotlist", "Shotlist", bundle.shots.length],
+    ["checkliste", "Meine Liste", openChecks],
+    ["zeitplan", "Zeitplan", bundle.schedule.length],
+    ["absprachen", "Absprachen", bundle.comments.length]
+  ];
+
+  var shared = { planning: p, code: code, reload: reload, toast: props.toast, authorName: name };
+
+  return div(null,
+    div({ className: "topbar" },
+      div({ className: "topbar-in" },
+        div({ className: "mark", style: { padding: 0 } },
+          div({ className: "glyph" }, ii(null), ii(null), ii(null), ii(null))),
+        div({ style: { minWidth: 0 } },
+          div({ className: "crumb" }, countdown(p.shoot_date) + " · " + fmtShort(p.shoot_date)),
+          h1({ className: "trunc" }, p.title)),
+        div({ className: "sp" }),
+        Status({ value: p.status }),
+        h(ThemeBtn),
+        btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen"))),
+    div({ className: "tabs" },
+      tabs.map(function (t) {
+        return btn({ key: t[0], className: "tab" + (tab === t[0] ? " on" : ""), onClick: function () { setTab(t[0]); } },
+          t[1], t[2] ? span({ className: "cnt tnum" }, t[2]) : null);
+      })),
+    div({ className: "content" },
+      tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
+        : tab === "moodboard" ? h(Moodboard, { planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "ideen" ? h(Ideas, { planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
+        : tab === "checkliste" ? h(Checklist, { planning: p, items: bundle.checklist, code: code, reload: reload, toast: props.toast })
+        : tab === "zeitplan" ? h(Schedule, { planning: p, rows: bundle.schedule, reload: reload, toast: props.toast })
+        : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })));
+}
+
+function ModelOverview(props) {
+  var p = props.p, b = props.bundle;
+  var mine = b.checklist.filter(function (x) { return x.assignee !== "fotograf"; });
+  var done = mine.filter(function (x) { return x.done; }).length;
+  return div({ className: "split" },
+    div({ className: "cards" },
+      Card({ title: "Das Konzept", aside: span({ className: "lab" }, "von der Fotograf:in") },
+        p.concept
+          ? para({ className: "serif", style: { fontSize: 16.5, lineHeight: 1.68, maxWidth: "62ch", whiteSpace: "pre-wrap" } }, p.concept)
+          : Empty({}, "Das Konzept wird noch geschrieben.")),
+      Card({ title: "So bringst du dich ein" },
+        dl({ className: "dl" },
+          div(null, dt({ className: "lab" }, "Ideen"), dd(null, "Alles, was dir zum Shooting einfällt — Posen, Outfits, Orte, Stimmungen.")),
+          div(null, dt({ className: "lab" }, "Moodboard"), dd(null, "Referenzbilder hochladen oder verlinken, damit ihr dieselbe Bildsprache im Kopf habt.")),
+          div(null, dt({ className: "lab" }, "Meine Liste"), dd(null, "Abhaken, was du vorbereitet hast.")),
+          div(null, dt({ className: "lab" }, "Absprachen"), dd(null, "Fragen stellen, alles an einem Ort statt verstreut im Chat."))))),
+    div({ className: "cards" },
+      Card({ title: "Termin" },
+        dl({ className: "dl" },
+          div(null, dt({ className: "lab" }, "Tag"), dd(null, fmtDate(p.shoot_date))),
+          div(null, dt({ className: "lab" }, "Zeit"), dd(null, p.shoot_time || "—")),
+          div(null, dt({ className: "lab" }, "Ort"), dd(null, p.location || "—")),
+          div(null, dt({ className: "lab" }, "Status"), dd(null, lbl(STATUS, p.status))))),
+      Card({ title: "Deine Vorbereitung" },
+        div({ className: "ringwrap" },
+          Ring({ value: mine.length ? done / mine.length : 0 }),
+          div(null,
+            div({ className: "big" }, done + " / " + mine.length),
+            para({ className: "dim", style: { fontSize: 12.5 } }, "Punkte erledigt"))))));
+}
+
+/* ============================================================
+   Wurzel
+   ============================================================ */
+function App() {
+  var a = useState(null), session = a[0], setSession = a[1];
+  var b = useState(false), ready = b[0], setReady = b[1];
+  var c = useState(null), model = c[0], setModel = c[1];
+  var d = useState(""), msg = d[0], setMsg = d[1];
+  var timer = useRef(null);
+
+  var toast = useCallback(function (m) {
+    setMsg(m);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(function () { setMsg(""); }, 3400);
+  }, []);
+
+  useEffect(function () {
+    sb.auth.getSession().then(function (r) { setSession(r.data.session); setReady(true); });
+    var sub = sb.auth.onAuthStateChange(function (_e, s) { setSession(s); });
+    return function () { sub.data.subscription.unsubscribe(); };
+  }, []);
+
+  function leave() { location.hash = ""; setModel(null); }
+
+  var view;
+  if (!ready) view = div({ style: { display: "grid", placeItems: "center", minHeight: "100vh" } }, span({ className: "spin" }));
+  else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast, onLeave: leave });
+  else if (session) view = h(AdminApp, { session: session, toast: toast });
+  else view = h(Entrance, { onModel: function (code, data) { setModel({ code: code, data: data }); }, toast: toast });
+
+  return h(Frag, null, view, Toast({ msg: msg }));
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+
+})();
+</script>
+
+</body>
+</html>
