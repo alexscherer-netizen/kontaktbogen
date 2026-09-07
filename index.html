@@ -636,18 +636,6 @@ select.inp{appearance:none; padding-right:26px;
   .lb-foot .cap{font-size:15px}
 }
 
-function extUrl(v) {
-  var s = String(v || "").trim();
-  if (!s) return null;
-  if (/^https?:\/\//i.test(s)) return s;
-  if (s.charAt(0) === "@") return "https://instagram.com/" + s.slice(1);
-  return "https://" + s;
-}
-function extLabel(v) {
-  var s = String(v || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
-  return s.length > 32 ? s.slice(0, 31) + "…" : s;
-}
-
 /* ============================================================
    Rechtliches
    ============================================================ */
@@ -873,6 +861,45 @@ var div = tag("div"), span = tag("span"), para = tag("p"), h1 = tag("h1"), h2 = 
 var SUPABASE_URL = "https://sntkvqzfiyhtvtufqfgp.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNudGt2cXpmaXlodHZ0dWZxZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ5MjcsImV4cCI6MjA5MjcyMDkyN30.viXudtCbUkzLEmdsXqAGYFwlxNB-JiHNp11g0t1XHc0";
 var BUCKET = "photoshoot";
+
+/* ============================================================
+   ANGABEN FÜR IMPRESSUM UND DATENSCHUTZ
+   Hier stehen alle Betreiberdaten. Zum Ändern einfach diese
+   Werte bearbeiten — kein Datenbankzugriff, damit die Seiten
+   auch dann erscheinen, wenn Supabase gerade nicht antwortet.
+   ============================================================ */
+var SITE = {
+  operator_name:      "Alexander Scherer",
+  operator_addition:  "Fotografie",
+  street:             "Mertensstraße 18",
+  zip:                "13587",
+  city:               "Berlin",
+  country:            "Deutschland",
+  email:              "info@alexander-scherer.com",
+  phone:              "015209470692",
+
+  /* Kleinunternehmer nach § 19 UStG — daher keine USt-IdNr.
+     Steuernummer gehört bewusst NICHT ins Impressum. */
+  vat_id:             "",
+  register_entry:     "",
+  authority:          "",
+  responsible_person: "Alexander Scherer, Mertensstraße 18, 13587 Berlin",
+
+  hosting_provider:
+    "GitHub Pages, betrieben von GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, "
+    + "CA 94107, USA. Beim Aufruf der Seite werden dort technisch bedingt Zugriffsdaten "
+    + "einschließlich der IP-Adresse verarbeitet. Damit findet eine Übermittlung in die USA statt. "
+    + "GitHub führt hierfür eine eigene Zertifizierung unter dem EU-U.S. Data Privacy Framework; "
+    + "Rechtsgrundlage ist der Angemessenheitsbeschluss der Europäischen Kommission nach Art. 45 DSGVO. "
+    + "Datenschutzerklärung von GitHub: "
+    + "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+
+  /* Spendenlink. Leer lassen, dann erscheint gar kein Knopf. */
+  paypal_url:  "https://paypal.me/AlexanderGlauche",
+  donate_text: "Wenn dir der Kontaktbogen die Planung erleichtert, freue ich mich über eine kleine Unterstützung.",
+
+  privacy_extra: ""
+};
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: { persistSession: true, autoRefreshToken: true }
 });
@@ -1225,7 +1252,19 @@ function Entrance(props) {
       err ? div({ className: "hint bad" }, err) : null,
       info ? div({ className: "hint" }, info) : null,
       div({ style: { marginTop: 4 } }, h(ThemeBtn)),
-      h(SiteFoot, { site: props.site, onPage: props.onLegal })));
+      h(SiteFoot, { onPage: props.onLegal })));
+}
+
+function extUrl(v) {
+  var s = String(v || "").trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.charAt(0) === "@") return "https://instagram.com/" + s.slice(1);
+  return "https://" + s;
+}
+function extLabel(v) {
+  var s = String(v || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
+  return s.length > 32 ? s.slice(0, 31) + "…" : s;
 }
 
 /* ============================================================
@@ -1241,15 +1280,15 @@ function siteComplete(st) {
 }
 
 function PayPalButton(props) {
-  var st = props.site || {};
+  var st = SITE;
   if (!st.paypal_url) return null;
   return h("a", {
     className: "paypal", href: extUrl(st.paypal_url), target: "_blank", rel: "noopener noreferrer"
   }, span({ className: "pp" }, "PayPal"), props.label || "Unterstützen");
 }
 
-function Impressum(props) {
-  var st = props.site || {};
+function Impressum() {
+  var st = SITE;
   var addr = siteAddr(st);
   return div({ className: "legal-in" },
     h1(null, "Impressum"),
@@ -1312,12 +1351,12 @@ function Impressum(props) {
       ? h(Frag, null,
           h2(null, "Unterstützung"),
           para(null, st.donate_text || "Diese Anwendung lässt sich freiwillig unterstützen."),
-          div({ style: { marginTop: 12 } }, h(PayPalButton, { site: st })))
+          div({ style: { marginTop: 12 } }, h(PayPalButton, null)))
       : null);
 }
 
-function Datenschutz(props) {
-  var st = props.site || {};
+function Datenschutz() {
+  var st = SITE;
   var addr = siteAddr(st);
   var wer = st.operator_name || "der Betreiber dieser Anwendung";
 
@@ -1460,122 +1499,18 @@ function LegalPage(props) {
       div({ className: "sp" }),
       btn({ className: "btn btn-quiet btn-sm", onClick: function () { props.onPage("impressum"); } }, "Impressum"),
       btn({ className: "btn btn-quiet btn-sm", onClick: function () { props.onPage("datenschutz"); } }, "Datenschutz")),
-    props.page === "impressum"
-      ? h(Impressum, { site: props.site })
-      : h(Datenschutz, { site: props.site }));
+    props.page === "impressum" ? h(Impressum, null) : h(Datenschutz, null));
 }
 
 function SiteFoot(props) {
   return div({ className: "sitefoot" },
     btn({ onClick: function () { props.onPage("impressum"); } }, "Impressum"),
     btn({ onClick: function () { props.onPage("datenschutz"); } }, "Datenschutz"),
-    props.site && props.site.paypal_url
-      ? h("a", { href: extUrl(props.site.paypal_url), target: "_blank", rel: "noopener noreferrer" }, "Unterstützen")
+    SITE.paypal_url
+      ? h("a", { href: extUrl(SITE.paypal_url), target: "_blank", rel: "noopener noreferrer" }, "Unterstützen")
       : null);
 }
 
-/* Eingabemaske für den Betreiber */
-function SiteSheet(props) {
-  var st = props.site || {};
-  var keys = ["operator_name", "operator_addition", "street", "zip", "city", "country",
-              "email", "phone", "vat_id", "register_entry", "authority", "responsible_person",
-              "hosting_provider", "paypal_url", "donate_text", "privacy_extra"];
-  var a = useState(function () {
-    var o = {}; keys.forEach(function (k) { o[k] = st[k] || ""; }); return o;
-  }), f = a[0], setF = a[1];
-  var b = useState(false), busy = b[0], setBusy = b[1];
-  var c = useState(""), err = c[0], setErr = c[1];
-  function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
-
-  function save(ev) {
-    ev.preventDefault();
-    setBusy(true); setErr("");
-    var patch = {};
-    keys.forEach(function (k) { patch[k] = f[k].trim() || null; });
-    sb.from("ps_site").update(patch).eq("id", 1).then(function (r) {
-      setBusy(false);
-      if (r.error) { setErr(r.error.message); return; }
-      props.done();
-    });
-  }
-
-  var fehlt = [];
-  if (!f.operator_name.trim()) fehlt.push("Name");
-  if (!f.street.trim()) fehlt.push("Straße");
-  if (!f.zip.trim() || !f.city.trim()) fehlt.push("PLZ und Ort");
-  if (!f.email.trim()) fehlt.push("E-Mail");
-
-  return div({ className: "scrim", onMouseDown: function (ev) { if (ev.target === ev.currentTarget) props.close(); } },
-    frm({ className: "sheetbox", onSubmit: save, style: { width: "min(560px,100%)", maxHeight: "92vh", overflowY: "auto" } },
-      div({ style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line)" } },
-        h3(null, "Rechtliches"),
-        btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: props.close }, "Schließen")),
-      div({ style: { padding: 16, display: "flex", flexDirection: "column", gap: 14 } },
-        para({ className: "muted", style: { fontSize: "var(--fs-md)" } },
-          "Diese Angaben erscheinen im Impressum und in der Datenschutzerklärung. "
-          + "Für ein gewerblich betriebenes Angebot sind Name, ladungsfähige Anschrift und E-Mail Pflicht."),
-        fehlt.length ? div({ className: "gap-warn" }, "Noch offen: " + fehlt.join(", ")) : null,
-
-        span({ className: "lab" }, "Diensteanbieter"),
-        Field({ label: "Vollständiger Name oder Firmierung" },
-          inp({ className: "inp", value: f.operator_name, autoFocus: true, placeholder: "Vor- und Nachname",
-            onChange: function (e) { set("operator_name", e.target.value); } })),
-        Field({ label: "Zusatz (optional)" },
-          inp({ className: "inp", value: f.operator_addition, placeholder: "z. B. Fotografie, Einzelunternehmen",
-            onChange: function (e) { set("operator_addition", e.target.value); } })),
-        div({ className: "g2" },
-          Field({ label: "Straße und Hausnummer" },
-            inp({ className: "inp", value: f.street, onChange: function (e) { set("street", e.target.value); } })),
-          Field({ label: "Land" },
-            inp({ className: "inp", value: f.country, onChange: function (e) { set("country", e.target.value); } }))),
-        div({ className: "g2" },
-          Field({ label: "PLZ" },
-            inp({ className: "inp", value: f.zip, onChange: function (e) { set("zip", e.target.value); } })),
-          Field({ label: "Ort" },
-            inp({ className: "inp", value: f.city, onChange: function (e) { set("city", e.target.value); } }))),
-
-        span({ className: "lab" }, "Kontakt"),
-        div({ className: "g2" },
-          Field({ label: "E-Mail" },
-            inp({ className: "inp", type: "email", value: f.email, onChange: function (e) { set("email", e.target.value); } })),
-          Field({ label: "Telefon" },
-            inp({ className: "inp", value: f.phone, onChange: function (e) { set("phone", e.target.value); } }))),
-
-        span({ className: "lab" }, "Gewerbliche Angaben"),
-        div({ className: "g2" },
-          Field({ label: "USt-IdNr. (falls vorhanden)" },
-            inp({ className: "inp", value: f.vat_id, placeholder: "DE…",
-              onChange: function (e) { set("vat_id", e.target.value); } })),
-          Field({ label: "Registereintrag (falls vorhanden)" },
-            inp({ className: "inp", value: f.register_entry, placeholder: "Amtsgericht, HRB …",
-              onChange: function (e) { set("register_entry", e.target.value); } }))),
-        div({ className: "g2" },
-          Field({ label: "Aufsichtsbehörde (falls einschlägig)" },
-            inp({ className: "inp", value: f.authority, onChange: function (e) { set("authority", e.target.value); } })),
-          Field({ label: "Redaktionell verantwortlich" },
-            inp({ className: "inp", value: f.responsible_person, placeholder: "Name, Anschrift",
-              onChange: function (e) { set("responsible_person", e.target.value); } }))),
-
-        span({ className: "lab" }, "Datenschutz"),
-        Field({ label: "Hosting-Anbieter" },
-          inp({ className: "inp", value: f.hosting_provider, placeholder: "z. B. Netlify, Inc., San Francisco, USA",
-            onChange: function (e) { set("hosting_provider", e.target.value); } })),
-        Field({ label: "Ergänzende Hinweise (optional)" },
-          txa({ className: "inp", rows: 3, value: f.privacy_extra,
-            onChange: function (e) { set("privacy_extra", e.target.value); } })),
-
-        span({ className: "lab" }, "Unterstützung"),
-        Field({ label: "PayPal-Link" },
-          inp({ className: "inp", value: f.paypal_url, placeholder: "paypal.me/deinname",
-            onChange: function (e) { set("paypal_url", e.target.value); } })),
-        Field({ label: "Text über dem Knopf" },
-          inp({ className: "inp", value: f.donate_text,
-            onChange: function (e) { set("donate_text", e.target.value); } })),
-
-        err ? div({ className: "hint bad" }, err) : null,
-        btn({ className: "btn btn-pri btn-wide", disabled: busy },
-          busy ? span({ className: "spin" }) : null, "Speichern"))));
-}
 
 /* ============================================================
    Profil
@@ -1736,8 +1671,6 @@ function AdminApp(props) {
   var pr = useState(null), profile = pr[0], setProfile = pr[1];
   var po = useState(false), profileOpen = po[0], setProfileOpen = po[1];
   var jo = useState(false), joinOpen = jo[0], setJoinOpen = jo[1];
-  var so = useState(false), siteOpen = so[0], setSiteOpen = so[1];
-  var isSiteOwner = !!(props.site && props.site.owner_uid === uid);
   function pick(id) { setSel(id); setMView("detail"); }
 
   var loadProfile = useCallback(function () {
@@ -1908,8 +1841,7 @@ function AdminApp(props) {
         })),
       div({ className: "rail-legal" },
         btn({ onClick: function () { props.onLegal("impressum"); } }, "Impressum"),
-        btn({ onClick: function () { props.onLegal("datenschutz"); } }, "Datenschutz"),
-        isSiteOwner ? btn({ onClick: function () { setSiteOpen(true); } }, "Rechtliches pflegen") : null),
+        btn({ onClick: function () { props.onLegal("datenschutz"); } }, "Datenschutz")),
       div({ className: "rail-foot" },
         btn({ className: "me-btn", onClick: function () { setProfileOpen(true); }, title: "Profil bearbeiten" },
           Avatar({ url: profile && profile.avatar_url, name: myName, size: 36 }),
@@ -1935,11 +1867,6 @@ function AdminApp(props) {
       profile: profile, userId: uid,
       close: function () { setProfileOpen(false); },
       done: function () { setProfileOpen(false); loadProfile(); props.toast("Profil gespeichert"); }
-    }) : null,
-    siteOpen ? h(SiteSheet, {
-      site: props.site,
-      close: function () { setSiteOpen(false); },
-      done: function () { setSiteOpen(false); props.reloadSite(); props.toast("Angaben gespeichert"); }
     }) : null,
     joinOpen ? h(JoinSheet, {
       close: function () { setJoinOpen(false); },
@@ -3696,7 +3623,7 @@ function ModelApp(props) {
           div({ className: "tb-acts" }, h(ThemeBtn),
             btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen")))),
       h(LockedView, { title: p.title, host: bundle.host, onReload: reload }),
-      h(SiteFoot, { site: props.site, onPage: props.onLegal }));
+      h(SiteFoot, { onPage: props.onLegal }));
   }
 
   var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
@@ -3751,7 +3678,7 @@ function ModelApp(props) {
         : tab === "checkliste" ? h(Checklist, { planning: p, items: bundle.checklist, code: code, reload: reload, toast: props.toast })
         : tab === "zeitplan" ? h(Schedule, { planning: p, rows: bundle.schedule, reload: reload, toast: props.toast })
         : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })),
-    h(SiteFoot, { site: props.site, onPage: props.onLegal }));
+    h(SiteFoot, { onPage: props.onLegal }));
 }
 
 function HostCard(props) {
@@ -3867,15 +3794,7 @@ function App() {
   var d = useState(""), msg = d[0], setMsg = d[1];
   var e = useState(false), recovery = e[0], setRecovery = e[1];
   var lg = useState(null), legal = lg[0], setLegal = lg[1];
-  var si = useState(null), site = si[0], setSite = si[1];
   var timer = useRef(null);
-
-  /* Impressum und Datenschutz muessen auch ohne Anmeldung lesbar sein */
-  var loadSite = useCallback(function () {
-    return sb.from("ps_site").select("*").eq("id", 1).maybeSingle()
-      .then(function (r) { if (!r.error) setSite(r.data || null); });
-  }, []);
-  useEffect(function () { loadSite(); }, [loadSite]);
 
   var toast = useCallback(function (m) {
     setMsg(m);
@@ -3897,16 +3816,16 @@ function App() {
   var view;
   if (legal) {
     return h(Frag, null,
-      h(LegalPage, { page: legal, site: site, onPage: setLegal, onBack: function () { setLegal(null); } }),
+      h(LegalPage, { page: legal, onPage: setLegal, onBack: function () { setLegal(null); } }),
       Toast({ msg: msg }));
   }
   if (!ready) view = div({ style: { display: "grid", placeItems: "center", minHeight: "100vh" } }, span({ className: "spin" }));
   else if (recovery) view = h(NewPassword, { done: function () { setRecovery(false); toast("Passwort geändert"); } });
-  else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast, onLeave: leave,
-                                      site: site, onLegal: setLegal });
-  else if (session) view = h(AdminApp, { session: session, toast: toast, site: site, reloadSite: loadSite, onLegal: setLegal });
+  else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast,
+                                      onLeave: leave, onLegal: setLegal });
+  else if (session) view = h(AdminApp, { session: session, toast: toast, onLegal: setLegal });
   else view = h(Entrance, { onModel: function (code, data) { setModel({ code: code, data: data }); },
-                            toast: toast, site: site, onLegal: setLegal });
+                            toast: toast, onLegal: setLegal });
 
   return h(Frag, null, view, Toast({ msg: msg }));
 }
