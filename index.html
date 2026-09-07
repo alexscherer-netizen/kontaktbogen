@@ -193,6 +193,7 @@ a{color:var(--accent); text-underline-offset:3px}
 .btn-quiet:hover{background:var(--sunken); color:var(--ink)}
 .btn-sm{padding:4px 9px; font-size:12px}
 .btn-wide{width:100%}
+.btn-danger{color:var(--crit); border-color:var(--line-2)}
 .btn-danger:hover{border-color:var(--crit); color:var(--crit); background:var(--crit-tint)}
 
 .inp{
@@ -436,6 +437,15 @@ select.inp{appearance:none; padding-right:26px;
 .mapwrap{height:340px; width:100%; background:var(--sunken); position:relative}
 .mapwrap .leaflet-container{height:100%; width:100%; background:var(--sunken)}
 @media (max-width:640px){.mapwrap{height:260px}}
+.hits{border-top:1px solid var(--line); margin-top:14px}
+.hit{
+  display:block; width:100%; text-align:left; background:transparent; border:none;
+  border-top:1px solid var(--line); padding:10px 14px; cursor:pointer;
+}
+.hit:first-of-type{border-top:none}
+.hit:hover{background:var(--sunken)}
+.hit .t{display:block; font-size:13.5px; line-height:1.45}
+.hit .c{display:block; font-size:11px; color:var(--ink-3); margin-top:2px}
 .maproutes{display:flex; gap:8px; flex-wrap:wrap; padding:14px 16px}
 .mapnote{padding:0 16px 14px; font-size:12.5px; color:var(--ink-3)}
 .distline{
@@ -1560,7 +1570,15 @@ function PlanningView(props) {
           owner ? btn({ className: "btn btn-sm", onClick: copyCode },
             span({ className: "not-m" }, "Zugangslink kopieren"),
             span({ className: "only-m" }, "Link teilen"))
-          : span({ className: "lab" }, "Du bist Gast")))),
+          : btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: function () {
+              if (!confirm("„" + p.title + "“ aus deiner Liste entfernen? Die Planung selbst bleibt bestehen — mit dem Zugangscode kommst du jederzeit wieder rein.")) return;
+              sb.from("ps_planning_members").delete()
+                .eq("planning_id", p.id).eq("user_id", props.userId)
+                .then(function (r) {
+                  if (r.error) props.toast("Fehler: " + r.error.message);
+                  else { props.clearSel(); props.reloadList(); props.toast("Planung verlassen"); }
+                });
+            } }, "Planung verlassen")))),
     div({ className: "tabs" },
       tabs.map(function (t) {
         return btn({ key: t[0], className: "tab" + (tab === t[0] ? " on" : ""), onClick: function () { setTab(t[0]); } },
@@ -1627,7 +1645,11 @@ function Overview(props) {
     });
   }
   function del() {
-    if (!confirm("Planung „" + p.title + "“ mit allen Ideen, Bildern und Absprachen löschen?")) return;
+    var teile = d.images.length + d.ideas.length + d.comments.length + d.shots.length;
+    if (!confirm("„" + p.title + "“ endgültig löschen?\n\n"
+      + (teile ? teile + " Einträge und alle Bilder werden mitgelöscht.\n" : "")
+      + "Der Zugangscode " + p.access_code + " funktioniert danach nicht mehr.")) return;
+    setBusy(true);
     /* Erst die Dateien im Speicher, dann die Datenbankzeile — sonst bleiben
        die Bilder als Karteileichen im Bucket liegen. */
     listPlanningFiles(p).then(function (paths) {
@@ -1635,9 +1657,10 @@ function Overview(props) {
     }).then(function () {
       return sb.from("ps_plannings").delete().eq("id", p.id);
     }).then(function (r) {
-      if (r && r.error) props.toast("Fehler: " + r.error.message);
-      else { props.clearSel(); props.reloadList(); props.toast("Planung und Bilder gelöscht"); }
-    }, function (e) { props.toast("Fehler: " + (e.message || e)); });
+      setBusy(false);
+      if (r && r.error) { props.toast("Löschen fehlgeschlagen: " + r.error.message); return; }
+      props.clearSel(); props.reloadList(); props.toast("„" + p.title + "“ wurde gelöscht");
+    }, function (e) { setBusy(false); props.toast("Löschen fehlgeschlagen: " + (e.message || e)); });
   }
   function addToCalendar() {
     var ics = buildIcs(p);
@@ -1677,9 +1700,24 @@ function Overview(props) {
         !form.shoot_date ? div({ className: "hint", style: { marginTop: 14 } },
           "Noch kein Termin. Unter „Termine“ tragt ihr beide eure Verfügbarkeit ein; sobald du einen Vorschlag annimmst, füllen sich Tag und Zeitfenster von selbst.") : null,
         hr({ className: "sep" }),
-        div({ className: "row", style: { justifyContent: "space-between" } },
-          btn({ className: "btn btn-pri", onClick: save, disabled: busy }, busy ? span({ className: "spin" }) : null, "Änderungen speichern"),
-          btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: del }, "Planung löschen")))),
+        div({ className: "row" },
+          btn({ className: "btn btn-pri", onClick: save, disabled: busy }, busy ? span({ className: "spin" }) : null, "Änderungen speichern"))),
+
+      /* Eigene Karte, damit das Löschen auffindbar ist — und man sieht, was dranhängt */
+      Card({ title: "Planung löschen" },
+        para({ className: "muted", style: { fontSize: 13, lineHeight: 1.6 } },
+          "Damit verschwindet die Planung endgültig, zusammen mit allem, was daran hängt. " +
+          "Der Zugangscode gilt danach nicht mehr, Gäste sehen die Planung nicht länger. " +
+          "Das lässt sich nicht rückgängig machen."),
+        div({ className: "row", style: { gap: 6, marginTop: 12 } },
+          [["Bilder", d.images.length], ["Ideen", d.ideas.length], ["Nachrichten", d.comments.length],
+           ["Shots", d.shots.length], ["Checkliste", d.checklist.length],
+           ["Termine", d.availability.length + d.proposals.length]]
+            .filter(function (x) { return x[1] > 0; })
+            .map(function (x) { return span({ key: x[0], className: "tag tnum" }, x[1] + " " + x[0]); })),
+        div({ style: { marginTop: 14 } },
+          btn({ className: "btn btn-danger", onClick: del, disabled: busy },
+            busy ? span({ className: "spin" }) : null, "Planung endgültig löschen")))),
 
     div({ className: "cards" },
       Card({ title: "Freigabe", flush: true,
@@ -2290,6 +2328,22 @@ function routeLinks(startText, startPt, lat, lng) {
   return out;
 }
 
+/* Adresse -> Koordinaten, über die Suche von OpenStreetMap.
+   Läuft nur auf Knopfdruck, nicht beim Tippen — der Dienst ist frei,
+   aber ausdrücklich nicht für Dauerfeuer gedacht. */
+function geocode(q) {
+  var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=0&limit=5"
+          + "&accept-language=de&q=" + encodeURIComponent(q);
+  return fetch(url, { headers: { "Accept": "application/json" } }).then(function (r) {
+    if (!r.ok) throw new Error("Antwort " + r.status);
+    return r.json();
+  }).then(function (list) {
+    return (list || []).map(function (x) {
+      return { lat: parseFloat(x.lat), lng: parseFloat(x.lon), label: x.display_name };
+    }).filter(function (x) { return !isNaN(x.lat) && !isNaN(x.lng); });
+  });
+}
+
 var leafletLoading = null;
 function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
@@ -2308,6 +2362,14 @@ function loadLeaflet() {
   return leafletLoading;
 }
 
+function GeoNote() {
+  return para({ className: "mapnote", style: { padding: "10px 0 0", fontSize: 12 } },
+    "Adresssuche über Nominatim von OpenStreetMap — ein Gemeinschaftsdienst. Er wird nur auf Knopfdruck angefragt, nie beim Tippen. ",
+    h("a", { href: "https://operations.osmfoundation.org/policies/nominatim/", target: "_blank", rel: "noopener noreferrer" },
+      "Nutzungsrichtlinie"),
+    ".");
+}
+
 function MapView(props) {
   var admin = !!props.admin, p = props.planning;
   var hasTarget = typeof p.location_lat === "number" && typeof p.location_lng === "number";
@@ -2319,9 +2381,12 @@ function MapView(props) {
     if (!raw) return null;
     try { return JSON.parse(raw); } catch (e) { return null; }
   }), startPt = b[0], setStartPt = b[1];
-  var c = useState(""), locInput = c[0], setLocInput = c[1];
+  var c = useState(p.location || ""), locInput = c[0], setLocInput = c[1];
+  var c2 = useState(null), locHits = c2[0], setLocHits = c2[1];
+  var c3 = useState(false), locBusy = c3[0], setLocBusy = c3[1];
+  var s1 = useState(null), startHits = s1[0], setStartHits = s1[1];
+  var s2 = useState(false), startBusy = s2[0], setStartBusy = s2[1];
   var d = useState(""), err = d[0], setErr = d[1];
-  var e2 = useState(false), busy = e2[0], setBusy = e2[1];
   var mapRef = useRef(null), boxRef = useRef(null), layersRef = useRef([]);
 
   /* Karte aufbauen und bei Änderungen neu bestücken */
@@ -2364,18 +2429,32 @@ function MapView(props) {
     return function () { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, []);
 
-  function saveTarget() {
-    var pt = coordsFromText(locInput);
-    if (!pt) { setErr("Damit kann ich nichts anfangen. Füge einen Kartenlink ein oder schreib „53.5413, 9.9695“."); return; }
-    setErr(""); setBusy(true);
-    sb.from("ps_plannings").update({
-      location_lat: pt.lat, location_lng: pt.lng,
-      location_url: /^https?:/i.test(locInput.trim()) ? locInput.trim() : null
-    }).eq("id", p.id).then(function (r) {
-      setBusy(false);
+  /* ---------- Location der Planung ---------- */
+  function applyTarget(pt, label) {
+    setLocBusy(true); setErr(""); setLocHits(null);
+    var patch = { location_lat: pt.lat, location_lng: pt.lng };
+    if (label && !String(p.location || "").trim()) patch.location = label;
+    sb.from("ps_plannings").update(patch).eq("id", p.id).then(function (r) {
+      setLocBusy(false);
       if (r.error) { setErr(r.error.message); return; }
-      setLocInput(""); props.reloadList && props.reloadList(); props.reload();
+      props.reloadList && props.reloadList(); props.reload();
       props.toast("Location gesetzt");
+    });
+  }
+  function findTarget() {
+    var q = locInput.trim();
+    if (!q) { setErr("Trag eine Adresse ein, oder füge einen Kartenlink ein."); return; }
+    var direct = coordsFromText(q);
+    if (direct) { applyTarget(direct, null); return; }
+    setLocBusy(true); setErr(""); setLocHits(null);
+    geocode(q).then(function (list) {
+      setLocBusy(false);
+      if (!list.length) { setErr("Zu „" + q + "“ wurde nichts gefunden. Versuch es mit Straße, Hausnummer und Ort — oder füge einen Kartenlink ein."); return; }
+      if (list.length === 1) { applyTarget(list[0], list[0].label); return; }
+      setLocHits(list);
+    }, function (e) {
+      setLocBusy(false);
+      setErr("Die Adresssuche ist nicht erreichbar (" + (e.message || e) + "). Du kannst stattdessen einen Kartenlink oder Koordinaten einfügen.");
     });
   }
   function clearTarget() {
@@ -2383,26 +2462,49 @@ function MapView(props) {
       .eq("id", p.id).then(function () { props.reloadList && props.reloadList(); props.reload(); });
   }
 
+  /* ---------- Eigener Startpunkt ---------- */
+  function keepStart(text, pt) {
+    setStart(text); store.set(storeKey, text);
+    setStartPt(pt || null);
+    store.set(storeKey + "_c", pt ? JSON.stringify(pt) : "");
+  }
+  function findStart() {
+    var q = start.trim();
+    if (!q) { setErr("Trag ein, wo du losfährst."); return; }
+    var direct = coordsFromText(q);
+    if (direct) { keepStart(q, direct); setStartHits(null); return; }
+    setStartBusy(true); setErr(""); setStartHits(null);
+    geocode(q).then(function (list) {
+      setStartBusy(false);
+      if (!list.length) { setErr("Zu „" + q + "“ wurde nichts gefunden. Die Routen-Knöpfe funktionieren trotzdem — sie geben die Adresse direkt an deine Karten-App weiter."); return; }
+      if (list.length === 1) { keepStart(list[0].label, list[0]); return; }
+      setStartHits(list);
+    }, function (e) {
+      setStartBusy(false);
+      setErr("Die Adresssuche ist nicht erreichbar (" + (e.message || e) + "). Die Routen-Knöpfe funktionieren trotzdem.");
+    });
+  }
   function useMyPosition() {
     if (!navigator.geolocation) { setErr("Dein Browser gibt den Standort nicht her."); return; }
-    setErr(""); setBusy(true);
+    setErr(""); setStartBusy(true);
     navigator.geolocation.getCurrentPosition(function (pos) {
-      setBusy(false);
-      var pt = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setStartPt(pt); store.set(storeKey + "_c", JSON.stringify(pt));
-      setStart("Mein Standort"); store.set(storeKey, "Mein Standort");
+      setStartBusy(false); setStartHits(null);
+      keepStart("Mein Standort", { lat: pos.coords.latitude, lng: pos.coords.longitude });
     }, function () {
-      setBusy(false); setErr("Standort nicht bekommen — trag deine Adresse von Hand ein.");
+      setStartBusy(false);
+      setErr("Standort nicht bekommen — trag deine Adresse ein und tipp auf Suchen.");
     }, { enableHighAccuracy: false, timeout: 8000 });
   }
-  function saveStart(value) {
-    setStart(value); store.set(storeKey, value);
-    var pt = coordsFromText(value);
-    if (pt) { setStartPt(pt); store.set(storeKey + "_c", JSON.stringify(pt)); }
-  }
-  function clearStart() {
-    setStart(""); setStartPt(null);
-    store.set(storeKey, ""); store.set(storeKey + "_c", "");
+  function clearStart() { keepStart("", null); setStartHits(null); }
+
+  function hitList(list, onPick) {
+    return div({ className: "hits" },
+      span({ className: "lab", style: { padding: "10px 14px 4px", display: "block" } }, "Meintest du"),
+      list.map(function (x, i) {
+        return btn({ key: i, className: "hit", type: "button", onClick: function () { onPick(x); } },
+          span({ className: "t" }, x.label),
+          span({ className: "c mono" }, x.lat.toFixed(4) + ", " + x.lng.toFixed(4)));
+      }));
   }
 
   var dist = (hasTarget && startPt)
@@ -2412,21 +2514,29 @@ function MapView(props) {
     : [];
 
   return div({ className: "cards" },
-    admin ? Card({ title: "Location festlegen", aside: hasTarget ? span({ className: "st st-bestaetigt" }, ii(null), "gesetzt") : span({ className: "st st-idee" }, ii(null), "offen") },
-      para({ className: "muted", style: { fontSize: 13 } },
-        "Öffne die Location in Google Maps oder OpenStreetMap und füge den Link hier ein — oder tipp die Koordinaten direkt. Ich lese sie aus dem Link heraus, ohne ihn irgendwohin zu schicken."),
-      div({ className: "row", style: { marginTop: 12 } },
+    admin ? Card({
+      title: "Location festlegen",
+      aside: hasTarget ? span({ className: "st st-bestaetigt" }, ii(null), "gesetzt")
+                       : span({ className: "st st-idee" }, ii(null), "offen")
+    },
+      para({ className: "muted", style: { fontSize: 13, lineHeight: 1.6 } },
+        "Tipp die Adresse ein und such sie — oder füge einen Link aus Google Maps oder OpenStreetMap ein, dann lese ich die Koordinaten direkt daraus. Reine Koordinaten wie „53.5413, 9.9695“ gehen auch."),
+      frm({ className: "row", style: { marginTop: 12 }, onSubmit: function (ev) { ev.preventDefault(); findTarget(); } },
         inp({ className: "inp", style: { flex: 1, minWidth: 200 }, value: locInput,
-          placeholder: "Kartenlink einfügen oder 53.5413, 9.9695",
-          onChange: function (ev) { setLocInput(ev.target.value); } }),
-        btn({ className: "btn btn-pri", onClick: saveTarget, disabled: busy }, "Übernehmen"),
-        hasTarget ? btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: clearTarget }, "Entfernen") : null),
+          placeholder: "Straße, Hausnummer, Ort",
+          onChange: function (ev) { setLocInput(ev.target.value); setLocHits(null); } }),
+        btn({ className: "btn btn-pri", disabled: locBusy },
+          locBusy ? span({ className: "spin" }) : null, "Suchen"),
+        hasTarget ? btn({ type: "button", className: "btn btn-quiet btn-sm btn-danger", onClick: clearTarget }, "Entfernen") : null),
+      locHits ? hitList(locHits, function (x) { applyTarget(x, x.label); }) : null,
       hasTarget ? para({ className: "mono", style: { fontSize: 12, color: "var(--ink-3)", marginTop: 10 } },
-        p.location_lat.toFixed(5) + ", " + p.location_lng.toFixed(5) + (p.location ? " · " + p.location : "")) : null) : null,
+        p.location_lat.toFixed(5) + ", " + p.location_lng.toFixed(5) + (p.location ? " · " + p.location : "")) : null,
+      err && admin ? div({ className: "hint bad", style: { marginTop: 12 } }, err) : null,
+      GeoNote()) : null,
 
     !hasTarget
       ? Card({ title: "Anfahrt" }, Empty({},
-          admin ? "Setz oben die Location, dann erscheint hier die Karte."
+          admin ? "Such oben die Adresse, dann erscheint hier die Karte."
                 : "Die Location steht noch nicht fest."))
       : sec({ className: "card" },
           div({ className: "hd" },
@@ -2446,22 +2556,26 @@ function MapView(props) {
             "Die Knöpfe öffnen die Navigation in deiner Karten-App — dort läuft die echte Route mit Verkehrslage.")),
 
     hasTarget ? Card({ title: "Dein Startpunkt", aside: span({ className: "lab" }, "bleibt auf deinem Gerät") },
-      para({ className: "muted", style: { fontSize: 13 } },
+      para({ className: "muted", style: { fontSize: 13, lineHeight: 1.6 } },
         "Wo startest du? Die Angabe wird nur in diesem Browser gespeichert und nirgendwo hochgeladen — die andere Seite sieht sie nicht, ich auch nicht."),
-      div({ className: "row", style: { marginTop: 12 } },
+      frm({ className: "row", style: { marginTop: 12 }, onSubmit: function (ev) { ev.preventDefault(); findStart(); } },
         inp({ className: "inp", style: { flex: 1, minWidth: 200 }, value: start,
-          placeholder: "Adresse, Ort oder Koordinaten",
-          onChange: function (ev) { saveStart(ev.target.value); } }),
-        btn({ className: "btn", onClick: useMyPosition, disabled: busy },
-          busy ? span({ className: "spin" }) : null, "Aktueller Standort"),
-        start ? btn({ className: "btn btn-quiet btn-sm", onClick: clearStart }, "Löschen") : null),
-      !startPt && start
-        ? div({ className: "hint", style: { marginTop: 12 } },
-            "Für die Linie auf der Karte brauche ich Koordinaten. Für die Routen-Knöpfe reicht die Adresse — die wird direkt an die Karten-App übergeben.")
-        : null,
-      err ? div({ className: "hint bad", style: { marginTop: 12 } }, err) : null) : null,
+          placeholder: "Straße, Hausnummer, Ort",
+          onChange: function (ev) { setStart(ev.target.value); store.set(storeKey, ev.target.value); setStartHits(null); } }),
+        btn({ className: "btn btn-pri", disabled: startBusy },
+          startBusy ? span({ className: "spin" }) : null, "Suchen"),
+        btn({ type: "button", className: "btn", onClick: useMyPosition, disabled: startBusy }, "Mein Standort"),
+        start ? btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: clearStart }, "Löschen") : null),
+      startHits ? hitList(startHits, function (x) { keepStart(x.label, x); }) : null,
+      startPt
+        ? para({ className: "mono", style: { fontSize: 12, color: "var(--ink-3)", marginTop: 10 } },
+            "Startpunkt gesetzt · " + startPt.lat.toFixed(4) + ", " + startPt.lng.toFixed(4))
+        : (start ? div({ className: "hint", style: { marginTop: 12 } },
+            "Noch keine Koordinaten — tipp auf „Suchen“, dann zeichne ich die Linie auf der Karte. Für die Routen-Knöpfe reicht die Adresse auch so.") : null),
+      err && !admin ? div({ className: "hint bad", style: { marginTop: 12 } }, err) : null,
+      GeoNote()) : null,
 
-    !hasTarget && err ? div({ className: "hint bad" }, err) : null);
+    (!hasTarget && err) ? div({ className: "hint bad" }, err) : null);
 }
 
 /* ============================================================
