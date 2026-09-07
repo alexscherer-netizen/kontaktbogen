@@ -406,6 +406,44 @@ select.inp{appearance:none; padding-right:26px;
 .member-row .rl{font-size:12px; color:var(--ink-3)}
 
 /* ============================================================
+   Freigabe
+   ============================================================ */
+.sw{display:flex; align-items:center; gap:12px; padding:11px 16px; cursor:pointer}
+.sw .txt{flex:1; min-width:0}
+.sw .txt b{display:block; font-size:13.5px; font-weight:500}
+.sw .txt span{font-size:12.5px; color:var(--ink-3)}
+.sw input{position:absolute; opacity:0; pointer-events:none}
+.track{
+  width:40px; height:23px; border-radius:100px; background:var(--surface-3, var(--sunken));
+  border:1px solid var(--line-2); position:relative; flex:none; transition:background .15s, border-color .15s;
+}
+.track::after{
+  content:""; position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%;
+  background:var(--surface); box-shadow:var(--shadow-1); transition:transform .15s;
+}
+.sw input:checked + .track{background:var(--accent); border-color:var(--accent)}
+.sw input:checked + .track::after{transform:translateX(17px)}
+.sw input:focus-visible + .track{outline:2px solid var(--accent); outline-offset:2px}
+.sw.off .txt b{color:var(--ink-3)}
+.locked{
+  display:grid; place-items:center; min-height:60vh; padding:30px 20px; text-align:center;
+}
+.locked .box{max-width:420px; display:flex; flex-direction:column; gap:14px; align-items:center}
+
+/* ============================================================
+   Karte
+   ============================================================ */
+.mapwrap{height:340px; width:100%; background:var(--sunken); position:relative}
+.mapwrap .leaflet-container{height:100%; width:100%; background:var(--sunken)}
+@media (max-width:640px){.mapwrap{height:260px}}
+.maproutes{display:flex; gap:8px; flex-wrap:wrap; padding:14px 16px}
+.mapnote{padding:0 16px 14px; font-size:12.5px; color:var(--ink-3)}
+.distline{
+  display:flex; align-items:baseline; gap:10px; padding:12px 16px; border-top:1px solid var(--line);
+}
+.distline b{font-size:20px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+
+/* ============================================================
    Bereiche
    ============================================================ */
 .gsec{display:flex; align-items:center; gap:8px; padding:14px 16px 6px}
@@ -708,7 +746,7 @@ var SHOT_STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bes
 var IDEA_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["pose", "Pose"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["requisite", "Requisite"]];
 var IMG_CAT = [["moodboard", "Moodboard"], ["pose", "Pose"], ["outfit", "Outfit"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["ergebnis", "Ergebnis"]];
 var CHECK_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["equipment", "Equipment"], ["requisite", "Requisite"], ["organisation", "Organisation"]];
-var ASSIGNEE = [["fotograf", "Inhaber:in"], ["model", "Gast"], ["beide", "Gemeinsam"]];
+var ASSIGNEE = [["fotograf", "Planungsverantwortlicher"], ["model", "Gast"], ["beide", "Gemeinsam"]];
 var MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function lbl(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return v; }
@@ -1252,7 +1290,7 @@ function AdminApp(props) {
           members: s(8),
           genres: s(9)
         });
-        /* Profile nachladen: die Beteiligten und die Inhaber:in der Planung */
+        /* Profile nachladen: die Beteiligten und der Planungsverantwortliche der Planung */
         var ids = s(8).map(function (m) { return m.user_id; });
         var PF = "user_id,display_name,role_label,avatar_url,city,instagram,website,bio";
         return sb.from("ps_plannings").select("owner_id").eq("id", id).maybeSingle().then(function (op) {
@@ -1486,16 +1524,23 @@ function PlanningView(props) {
   var openProps = d ? d.proposals.filter(function (x) { return x.status === "offen"; }).length : 0;
   var guestGenres = d ? (d.genres || []).filter(function (x) { return x.party === (owner ? "gast" : "inhaber"); }).length : 0;
   var tabs = [
-    ["uebersicht", "Übersicht", 0],
-    ["termine", "Termine", openProps],
-    ["bereiche", "Bereiche", guestGenres],
-    ["moodboard", "Moodboard", d ? d.images.length : 0],
-    ["ideen", "Ideen", d ? d.ideas.length : 0],
-    ["shotlist", "Shotlist", d ? d.shots.length : 0],
-    ["checkliste", "Checkliste", openChecks],
-    ["zeitplan", "Zeitplan", d ? d.schedule.length : 0],
-    ["absprachen", "Absprachen", d ? d.comments.length : 0]
-  ];
+    ["uebersicht", "Übersicht", 0, null],
+    ["termine", "Termine", openProps, "termine"],
+    ["bereiche", "Bereiche", guestGenres, "bereiche"],
+    ["anfahrt", "Anfahrt", 0, "karte"],
+    ["moodboard", "Moodboard", d ? d.images.length : 0, "moodboard"],
+    ["ideen", "Ideen", d ? d.ideas.length : 0, "ideen"],
+    ["shotlist", "Shotlist", d ? d.shots.length : 0, "shotlist"],
+    ["checkliste", "Checkliste", openChecks, "checkliste"],
+    ["zeitplan", "Zeitplan", d ? d.schedule.length : 0, "zeitplan"],
+    ["absprachen", "Absprachen", d ? d.comments.length : 0, "absprachen"]
+  ].filter(function (t) { return owner || !t[3] || sectionOn(p, t[3]); });
+  /* Gast auf einem inzwischen versteckten Reiter zurückholen */
+  useEffect(function () {
+    var ok = false;
+    tabs.forEach(function (t) { if (t[0] === tab) ok = true; });
+    if (!ok) setTab("uebersicht");
+  }, [tabs.length]);
 
   function copyCode() {
     copyText(shareUrl(p.access_code), function (ok) {
@@ -1523,12 +1568,15 @@ function PlanningView(props) {
       })),
     div({ className: "content" },
       !d ? Empty({}, "Lade Planungsdaten …")
+        : (!owner && !p.is_shared)
+            ? h(LockedView, { title: p.title, host: d.host, onReload: props.reloadDetail })
         : tab === "uebersicht"
             ? (owner ? h(Overview, { planning: p, data: d, reloadList: props.reloadList, reloadDetail: props.reloadDetail,
                                      clearSel: props.clearSel, toast: props.toast, myName: props.myName, myAvatar: props.myAvatar })
                      : h(ModelOverview, { p: p, bundle: d, name: props.myName }))
         : tab === "termine" ? h(Scheduling, withCtx({ availability: d.availability, proposals: d.proposals, reloadList: props.reloadList }))
         : tab === "bereiche" ? h(Genres, withCtx({ genres: d.genres }))
+        : tab === "anfahrt" ? h(MapView, withCtx({ reloadList: props.reloadList }))
         : tab === "moodboard" ? h(Moodboard, withCtx({ images: d.images }))
         : tab === "ideen" ? h(Ideas, withCtx({ ideas: d.ideas }))
         : tab === "shotlist" ? h(Shotlist, withCtx({ shots: d.shots }))
@@ -1634,6 +1682,35 @@ function Overview(props) {
           btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: del }, "Planung löschen")))),
 
     div({ className: "cards" },
+      Card({ title: "Freigabe", flush: true,
+        aside: span({ className: "st " + (p.is_shared ? "st-bestaetigt" : "st-idee") }, ii(null), p.is_shared ? "geteilt" : "in Vorbereitung") },
+        div({ className: "rows" },
+          Switch({
+            label: "Planung für Gäste freigeben",
+            hint: p.is_shared ? "Gäste sehen die freigegebenen Bereiche." : "Gäste sehen nur den Titel und wer die Planung führt.",
+            checked: !!p.is_shared,
+            onChange: function (v) {
+              sb.from("ps_plannings").update({ is_shared: v }).eq("id", p.id).then(function (r) {
+                if (r.error) props.toast("Fehler: " + r.error.message);
+                else { props.reloadList(); props.toast(v ? "Planung ist geteilt" : "Planung ist wieder unter Verschluss"); }
+              });
+            }
+          }),
+          SECTIONS.map(function (sc) {
+            return Switch({
+              key: sc[0], label: sc[1], hint: sc[2],
+              checked: sectionOn(p, sc[0]), disabled: !p.is_shared,
+              onChange: function (v) {
+                var next = {}; var cur = p.share_settings || {};
+                for (var k in cur) next[k] = cur[k];
+                next[sc[0]] = v;
+                sb.from("ps_plannings").update({ share_settings: next }).eq("id", p.id).then(function (r) {
+                  if (r.error) props.toast("Fehler: " + r.error.message); else props.reloadList();
+                });
+              }
+            });
+          }))),
+
       Card({ title: "Zugang für Gäste", aside: span({ className: "st " + (p.code_active ? "st-bestaetigt" : "st-verworfen") }, ii(null), p.code_active ? "aktiv" : "gesperrt") },
         div({ className: "access" },
           div({ className: "val" }, p.access_code),
@@ -1651,7 +1728,7 @@ function Overview(props) {
             Avatar({ name: props.myName || "Du", url: props.myAvatar, size: 36 }),
             div({ style: { flex: 1, minWidth: 0 } },
               div({ className: "nm trunc" }, (props.myName || "Du") + " · du"),
-              div({ className: "rl" }, "Inhaber:in")),
+              div({ className: "rl" }, "Planungsverantwortlicher")),
             span({ className: "st st-bestaetigt" }, ii(null), "alle Rechte")),
           (d.members || []).map(function (m) {
             var pf = m.profile || {};
@@ -1716,7 +1793,7 @@ function Moodboard(props) {
     };
     var q;
     if (admin) {
-      base.author_role = "admin"; base.author_name = props.authorName || "Inhaber:in"; base.author_id = props.userId || null;
+      base.author_role = "admin"; base.author_name = props.authorName || "Planungsverantwortlicher"; base.author_id = props.userId || null;
       q = sb.from("ps_images").insert(base);
     } else if (code) {
       q = sb.rpc("ps_add_image", {
@@ -1799,7 +1876,7 @@ function Moodboard(props) {
                   ? btn({ className: "rm", title: "Entfernen", onClick: function () { remove(img); } }, "×") : null,
                 figcap({ className: "info" },
                   img.caption ? div({ className: "t" }, img.caption) : null,
-                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Inhaber:in" : "Gast")))));
+                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")))));
             }))));
 }
 
@@ -1819,7 +1896,7 @@ function Ideas(props) {
     var base = { planning_id: p.id, title: title.trim(), description: desc || null, category: cat };
     var q;
     if (admin) {
-      base.author_role = "admin"; base.author_name = props.authorName || "Inhaber:in"; base.author_id = props.userId || null;
+      base.author_role = "admin"; base.author_name = props.authorName || "Planungsverantwortlicher"; base.author_id = props.userId || null;
       q = sb.from("ps_ideas").insert(base);
     } else if (props.code) {
       q = sb.rpc("ps_add_idea", {
@@ -1844,7 +1921,7 @@ function Ideas(props) {
     Promise.resolve(q).then(props.reload);
   }
 
-  var filters = [["alle", "Alle"], ["model", "Von Gästen"], ["admin", "Von der Inhaber:in"], ["offen", "Noch offen"]];
+  var filters = [["alle", "Alle"], ["model", "Von Gästen"], ["admin", "Vom Planungsverantwortlichen"], ["offen", "Noch offen"]];
   var shown = ideas.filter(function (x) {
     if (view === "model") return x.author_role === "model";
     if (view === "admin") return x.author_role === "admin";
@@ -1885,7 +1962,7 @@ function Ideas(props) {
                   x.description ? para({ className: "sub", style: { fontSize: 13, color: "var(--ink-2)", marginTop: 4, whiteSpace: "pre-wrap" } }, x.description) : null,
                   div({ className: "tagrow" },
                     span({ className: "tag" }, lbl(IDEA_CAT, x.category)),
-                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Inhaber:in" : "Gast")),
+                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")),
                     span({ className: "tag tnum" }, fmtTs(x.created_at)))),
                 div({ className: "row acts", style: { gap: 6, flexWrap: "nowrap" } },
                   admin ? sel({ className: "inp inp-sm", value: x.status, onChange: function (ev) { setStatus(x, ev.target.value); } },
@@ -1992,7 +2069,7 @@ function Checklist(props) {
         ? sb.rpc("ps_toggle_check", { p_code: props.code, p_item_id: it.id, p_done: !it.done })
         : sb.rpc("ps_member_toggle_check", { p_item_id: it.id, p_done: !it.done });
     Promise.resolve(q).then(function (r) {
-      if (r && r.error) { props.toast("Diesen Punkt kann nur die Inhaber:in abhaken."); return; }
+      if (r && r.error) { props.toast("Diesen Punkt kann nur der Planungsverantwortliche abhaken."); return; }
       props.reload();
     });
   }
@@ -2105,7 +2182,7 @@ function Chat(props) {
     var q;
     if (admin) {
       q = sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(),
-        author_role: "admin", author_name: props.authorName || "Inhaber:in", author_id: props.userId || null });
+        author_role: "admin", author_name: props.authorName || "Planungsverantwortlicher", author_id: props.userId || null });
     } else if (props.code) {
       q = sb.rpc("ps_add_comment", { p_code: props.code, p_author: props.authorName, p_body: body.trim(), p_idea_id: null });
     } else {
@@ -2132,7 +2209,7 @@ function Chat(props) {
         ? Empty({}, "Noch nichts besprochen. Schreib die erste Nachricht.")
         : props.comments.map(function (cm) {
             return div({ key: cm.id, className: "bubble" + (cm.author_role === mine ? " self" : "") },
-              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Inhaber:in" : "Gast")), " · " + fmtTs(cm.created_at)),
+              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Planungsverantwortlicher" : "Gast")), " · " + fmtTs(cm.created_at)),
               div({ className: "txt" }, cm.body));
           }),
       div({ ref: endRef })),
@@ -2144,6 +2221,247 @@ function Chat(props) {
         onKeyDown: function (ev) { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) send(ev); }
       }),
       btn({ className: "btn btn-pri", disabled: busy }, "Senden")));
+}
+
+/* ============================================================
+   Freigabe
+   ============================================================ */
+var SECTIONS = [
+  ["termine", "Termine", "Verfügbarkeiten und Terminvorschläge"],
+  ["bereiche", "Bereiche", "Was jede Seite machen möchte"],
+  ["karte", "Anfahrt", "Karte und Route zur Location"],
+  ["moodboard", "Moodboard", "Referenzbilder beider Seiten"],
+  ["ideen", "Ideen", "Das Ideen-Board"],
+  ["shotlist", "Shotlist", "Die geplanten Einstellungen"],
+  ["checkliste", "Checkliste", "Aufgaben und Outfits"],
+  ["zeitplan", "Zeitplan", "Der Ablauf am Shootingtag"],
+  ["absprachen", "Absprachen", "Der Nachrichtenverlauf"]
+];
+function sectionOn(planning, key) {
+  var s = (planning && planning.share_settings) || {};
+  return s[key] === undefined ? true : !!s[key];
+}
+
+function Switch(props) {
+  return lb({ className: "sw" + (props.checked ? "" : " off"), key: props.key },
+    div({ className: "txt" }, bb(null, props.label), props.hint ? span(null, props.hint) : null),
+    inp({ type: "checkbox", checked: !!props.checked, disabled: !!props.disabled,
+      onChange: function (ev) { props.onChange(ev.target.checked); } }),
+    span({ className: "track" }));
+}
+
+/* ============================================================
+   Anfahrt — die eigene Startadresse bleibt im Browser
+   ============================================================ */
+function haversine(a, b, c, d2) {
+  var R = 6371, t = Math.PI / 180;
+  var dLat = (c - a) * t, dLon = (d2 - b) * t;
+  var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(a * t) * Math.cos(c * t) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+/* Koordinaten aus einem eingefügten Kartenlink ziehen — ohne Netzabfrage */
+function coordsFromText(t) {
+  var s = String(t || "");
+  var m = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)                       // Google Maps
+       || s.match(/[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)               // ?q=lat,lng
+       || s.match(/[?&]mlat=(-?\d+\.\d+)[^]*?[?&]mlon=(-?\d+\.\d+)/)  // OpenStreetMap
+       || s.match(/#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/)             // OSM Permalink
+       || s.match(/^\s*(-?\d{1,2}\.\d+)\s*[,;]\s*(-?\d{1,3}\.\d+)\s*$/); // reine Koordinaten
+  if (!m) return null;
+  var la = parseFloat(m[1]), ln = parseFloat(m[2]);
+  if (isNaN(la) || isNaN(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) return null;
+  return { lat: la, lng: ln };
+}
+function routeLinks(startText, startPt, lat, lng) {
+  var to = lat + "," + lng;
+  var orgRaw = startPt ? (startPt.lat + "," + startPt.lng) : (startText || "");
+  var org = orgRaw ? encodeURIComponent(orgRaw) : "";
+  var out = [
+    ["Google Maps", "https://www.google.com/maps/dir/?api=1" + (org ? "&origin=" + org : "") +
+      "&destination=" + to + "&travelmode=driving"],
+    ["Apple Karten", "https://maps.apple.com/?daddr=" + to + (org ? "&saddr=" + org : "") + "&dirflg=d"]
+  ];
+  /* OpenStreetMap kann nur Koordinaten, keine Adressen */
+  out.push(startPt
+    ? ["OpenStreetMap", "https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=" +
+        startPt.lat + "," + startPt.lng + ";" + to]
+    : ["Auf OpenStreetMap", "https://www.openstreetmap.org/?mlat=" + lat + "&mlon=" + lng + "#map=16/" + lat + "/" + lng]);
+  return out;
+}
+
+var leafletLoading = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  if (leafletLoading) return leafletLoading;
+  leafletLoading = new Promise(function (resolve, reject) {
+    var css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    document.head.appendChild(css);
+    var js = document.createElement("script");
+    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.onload = function () { resolve(window.L); };
+    js.onerror = function () { reject(new Error("Kartenbibliothek nicht erreichbar")); };
+    document.head.appendChild(js);
+  });
+  return leafletLoading;
+}
+
+function MapView(props) {
+  var admin = !!props.admin, p = props.planning;
+  var hasTarget = typeof p.location_lat === "number" && typeof p.location_lng === "number";
+  var storeKey = "ps_start_" + p.id;
+
+  var a = useState(function () { return store.get(storeKey) || ""; }), start = a[0], setStart = a[1];
+  var b = useState(function () {
+    var raw = store.get(storeKey + "_c");
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }), startPt = b[0], setStartPt = b[1];
+  var c = useState(""), locInput = c[0], setLocInput = c[1];
+  var d = useState(""), err = d[0], setErr = d[1];
+  var e2 = useState(false), busy = e2[0], setBusy = e2[1];
+  var mapRef = useRef(null), boxRef = useRef(null), layersRef = useRef([]);
+
+  /* Karte aufbauen und bei Änderungen neu bestücken */
+  useEffect(function () {
+    if (!hasTarget || !boxRef.current) return;
+    var dead = false;
+    loadLeaflet().then(function (L) {
+      if (dead || !boxRef.current) return;
+      if (!mapRef.current) {
+        mapRef.current = L.map(boxRef.current, { scrollWheelZoom: false });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19, attribution: "© OpenStreetMap"
+        }).addTo(mapRef.current);
+      }
+      var map = mapRef.current;
+      layersRef.current.forEach(function (l) { map.removeLayer(l); });
+      layersRef.current = [];
+
+      var target = L.marker([p.location_lat, p.location_lng]).addTo(map)
+        .bindPopup(p.location || "Location");
+      layersRef.current.push(target);
+
+      if (startPt) {
+        var me = L.circleMarker([startPt.lat, startPt.lng], {
+          radius: 7, color: "#12504E", fillColor: "#12504E", fillOpacity: .85, weight: 2
+        }).addTo(map).bindPopup("Dein Startpunkt");
+        var line = L.polyline([[startPt.lat, startPt.lng], [p.location_lat, p.location_lng]],
+          { color: "#12504E", weight: 2, dashArray: "5 6", opacity: .8 }).addTo(map);
+        layersRef.current.push(me, line);
+        map.fitBounds(line.getBounds(), { padding: [36, 36] });
+      } else {
+        map.setView([p.location_lat, p.location_lng], 14);
+      }
+      setTimeout(function () { if (!dead && mapRef.current) mapRef.current.invalidateSize(); }, 60);
+    }, function () { setErr("Die Karte konnte nicht geladen werden. Die Routen-Knöpfe funktionieren trotzdem."); });
+    return function () { dead = true; };
+  }, [hasTarget, p.location_lat, p.location_lng, startPt && startPt.lat, startPt && startPt.lng]);
+
+  useEffect(function () {
+    return function () { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+  }, []);
+
+  function saveTarget() {
+    var pt = coordsFromText(locInput);
+    if (!pt) { setErr("Damit kann ich nichts anfangen. Füge einen Kartenlink ein oder schreib „53.5413, 9.9695“."); return; }
+    setErr(""); setBusy(true);
+    sb.from("ps_plannings").update({
+      location_lat: pt.lat, location_lng: pt.lng,
+      location_url: /^https?:/i.test(locInput.trim()) ? locInput.trim() : null
+    }).eq("id", p.id).then(function (r) {
+      setBusy(false);
+      if (r.error) { setErr(r.error.message); return; }
+      setLocInput(""); props.reloadList && props.reloadList(); props.reload();
+      props.toast("Location gesetzt");
+    });
+  }
+  function clearTarget() {
+    sb.from("ps_plannings").update({ location_lat: null, location_lng: null, location_url: null })
+      .eq("id", p.id).then(function () { props.reloadList && props.reloadList(); props.reload(); });
+  }
+
+  function useMyPosition() {
+    if (!navigator.geolocation) { setErr("Dein Browser gibt den Standort nicht her."); return; }
+    setErr(""); setBusy(true);
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      setBusy(false);
+      var pt = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setStartPt(pt); store.set(storeKey + "_c", JSON.stringify(pt));
+      setStart("Mein Standort"); store.set(storeKey, "Mein Standort");
+    }, function () {
+      setBusy(false); setErr("Standort nicht bekommen — trag deine Adresse von Hand ein.");
+    }, { enableHighAccuracy: false, timeout: 8000 });
+  }
+  function saveStart(value) {
+    setStart(value); store.set(storeKey, value);
+    var pt = coordsFromText(value);
+    if (pt) { setStartPt(pt); store.set(storeKey + "_c", JSON.stringify(pt)); }
+  }
+  function clearStart() {
+    setStart(""); setStartPt(null);
+    store.set(storeKey, ""); store.set(storeKey + "_c", "");
+  }
+
+  var dist = (hasTarget && startPt)
+    ? haversine(startPt.lat, startPt.lng, p.location_lat, p.location_lng) : null;
+  var links = hasTarget
+    ? routeLinks(start && start !== "Mein Standort" ? start : "", startPt, p.location_lat, p.location_lng)
+    : [];
+
+  return div({ className: "cards" },
+    admin ? Card({ title: "Location festlegen", aside: hasTarget ? span({ className: "st st-bestaetigt" }, ii(null), "gesetzt") : span({ className: "st st-idee" }, ii(null), "offen") },
+      para({ className: "muted", style: { fontSize: 13 } },
+        "Öffne die Location in Google Maps oder OpenStreetMap und füge den Link hier ein — oder tipp die Koordinaten direkt. Ich lese sie aus dem Link heraus, ohne ihn irgendwohin zu schicken."),
+      div({ className: "row", style: { marginTop: 12 } },
+        inp({ className: "inp", style: { flex: 1, minWidth: 200 }, value: locInput,
+          placeholder: "Kartenlink einfügen oder 53.5413, 9.9695",
+          onChange: function (ev) { setLocInput(ev.target.value); } }),
+        btn({ className: "btn btn-pri", onClick: saveTarget, disabled: busy }, "Übernehmen"),
+        hasTarget ? btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: clearTarget }, "Entfernen") : null),
+      hasTarget ? para({ className: "mono", style: { fontSize: 12, color: "var(--ink-3)", marginTop: 10 } },
+        p.location_lat.toFixed(5) + ", " + p.location_lng.toFixed(5) + (p.location ? " · " + p.location : "")) : null) : null,
+
+    !hasTarget
+      ? Card({ title: "Anfahrt" }, Empty({},
+          admin ? "Setz oben die Location, dann erscheint hier die Karte."
+                : "Die Location steht noch nicht fest."))
+      : sec({ className: "card" },
+          div({ className: "hd" },
+            h3(null, p.location || "Anfahrt"),
+            span({ className: "lab" }, "Luftlinie")),
+          div({ className: "mapwrap" }, div({ ref: boxRef, style: { height: "100%", width: "100%" } })),
+          dist !== null
+            ? div({ className: "distline" },
+                bb(null, dist < 10 ? dist.toFixed(1) : Math.round(dist)),
+                span({ className: "muted" }, "km Luftlinie von deinem Startpunkt"))
+            : null,
+          div({ className: "maproutes" },
+            links.map(function (l) {
+              return h("a", { key: l[0], className: "btn btn-sm", href: l[1], target: "_blank", rel: "noopener noreferrer" }, l[0]);
+            })),
+          div({ className: "mapnote" },
+            "Die Knöpfe öffnen die Navigation in deiner Karten-App — dort läuft die echte Route mit Verkehrslage.")),
+
+    hasTarget ? Card({ title: "Dein Startpunkt", aside: span({ className: "lab" }, "bleibt auf deinem Gerät") },
+      para({ className: "muted", style: { fontSize: 13 } },
+        "Wo startest du? Die Angabe wird nur in diesem Browser gespeichert und nirgendwo hochgeladen — die andere Seite sieht sie nicht, ich auch nicht."),
+      div({ className: "row", style: { marginTop: 12 } },
+        inp({ className: "inp", style: { flex: 1, minWidth: 200 }, value: start,
+          placeholder: "Adresse, Ort oder Koordinaten",
+          onChange: function (ev) { saveStart(ev.target.value); } }),
+        btn({ className: "btn", onClick: useMyPosition, disabled: busy },
+          busy ? span({ className: "spin" }) : null, "Aktueller Standort"),
+        start ? btn({ className: "btn btn-quiet btn-sm", onClick: clearStart }, "Löschen") : null),
+      !startPt && start
+        ? div({ className: "hint", style: { marginTop: 12 } },
+            "Für die Linie auf der Karte brauche ich Koordinaten. Für die Routen-Knöpfe reicht die Adresse — die wird direkt an die Karten-App übergeben.")
+        : null,
+      err ? div({ className: "hint bad", style: { marginTop: 12 } }, err) : null) : null,
+
+    !hasTarget && err ? div({ className: "hint bad" }, err) : null);
 }
 
 /* ============================================================
@@ -2170,7 +2488,7 @@ function Genres(props) {
   var rows = props.genres || [];
   var party = admin ? "inhaber" : "gast";
   var otherParty = admin ? "gast" : "inhaber";
-  var otherName = admin ? (p.model_name || "Die andere Seite") : "Inhaber:in";
+  var otherName = admin ? (p.model_name || "Die andere Seite") : "Planungsverantwortlicher";
   var a = useState({}), notes = a[0], setNotes = a[1];
   var b = useState(""), busyKey = b[0], setBusy = b[1];
 
@@ -2323,7 +2641,7 @@ function Scheduling(props) {
   var avail = props.availability || [], props_ = props.proposals || [];
   var party = admin ? "fotograf" : "model";
   var other = admin ? "model" : "fotograf";
-  var otherName = admin ? (p.model_name || "Die andere Seite") : "Inhaber:in";
+  var otherName = admin ? (p.model_name || "Die andere Seite") : "Planungsverantwortlicher";
 
   var start = p.shoot_date ? new Date(p.shoot_date + "T00:00:00") : new Date();
   var a = useState({ y: start.getFullYear(), m: start.getMonth() }), cur = a[0], setCur = a[1];
@@ -2365,7 +2683,7 @@ function Scheduling(props) {
       q = sb.from("ps_availability").upsert({
         planning_id: p.id, cal_day: selDay, party: party, state: f.state,
         time_from: f.from || null, time_to: f.to || null, note: f.note || null,
-        author_name: props.authorName || (admin ? "Inhaber:in" : "Gast"), author_id: props.userId || null
+        author_name: props.authorName || (admin ? "Planungsverantwortlicher" : "Gast"), author_id: props.userId || null
       }, { onConflict: "planning_id,party,cal_day" });
     }
     Promise.resolve(q).then(function (r) {
@@ -2481,7 +2799,7 @@ function Scheduling(props) {
             iso === p.shoot_date ? span({ className: "shoot", title: "Shootingtag" }) : null,
             span({ className: "n" }, dt.getDate()),
             div({ className: "cal-bars" },
-              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Inhaber:in" }),
+              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Planungsverantwortlicher" }),
               ii({ className: v.model ? v.model.state : "", title: "Gast" })));
         })),
 
@@ -2489,7 +2807,7 @@ function Scheduling(props) {
         span(null, ii({ style: { background: "var(--ok)" } }), "Passt"),
         span(null, ii({ style: { background: "var(--warn)" } }), "Vielleicht"),
         span(null, ii({ style: { background: "var(--crit)" } }), "Passt nicht"),
-        span(null, span({ className: "dim" }, "Obere Leiste: Inhaber:in · untere: Gast"))),
+        span(null, span({ className: "dim" }, "Obere Leiste: Planungsverantwortlicher · untere: Gast"))),
 
       /* ---------- Tageseditor ---------- */
       selDay ? div({ className: "daybox" },
@@ -2646,20 +2964,33 @@ function ModelApp(props) {
           btn({ className: "btn btn-pri btn-wide" }, "Los geht's"))));
   }
 
+  if (bundle.locked) {
+    return div(null,
+      div({ className: "topbar" },
+        div({ className: "topbar-in" },
+          div({ className: "tb-title" }, h1({ className: "trunc" }, p.title)),
+          div({ className: "tb-acts" }, h(ThemeBtn),
+            btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen")))),
+      h(LockedView, { title: p.title, host: bundle.host, onReload: reload }));
+  }
+
   var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
   var openVotes = (bundle.proposals || []).filter(function (x) { return x.status === "offen" && !x.model_vote; }).length;
   var hostGenres = (bundle.genres || []).filter(function (x) { return x.party === "inhaber"; }).length;
+  var vis = bundle.sections || {};
+  function shown(k) { return vis[k] === undefined ? true : !!vis[k]; }
   var tabs = [
-    ["uebersicht", "Übersicht", 0],
-    ["termine", "Termine", openVotes],
-    ["bereiche", "Bereiche", hostGenres],
-    ["moodboard", "Moodboard", bundle.images.length],
-    ["ideen", "Ideen", bundle.ideas.length],
-    ["shotlist", "Shotlist", bundle.shots.length],
-    ["checkliste", "Meine Liste", openChecks],
-    ["zeitplan", "Zeitplan", bundle.schedule.length],
-    ["absprachen", "Absprachen", bundle.comments.length]
-  ];
+    ["uebersicht", "Übersicht", 0, null],
+    ["termine", "Termine", openVotes, "termine"],
+    ["bereiche", "Bereiche", hostGenres, "bereiche"],
+    ["anfahrt", "Anfahrt", 0, "karte"],
+    ["moodboard", "Moodboard", bundle.images.length, "moodboard"],
+    ["ideen", "Ideen", bundle.ideas.length, "ideen"],
+    ["shotlist", "Shotlist", bundle.shots.length, "shotlist"],
+    ["checkliste", "Meine Liste", openChecks, "checkliste"],
+    ["zeitplan", "Zeitplan", bundle.schedule.length, "zeitplan"],
+    ["absprachen", "Absprachen", bundle.comments.length, "absprachen"]
+  ].filter(function (t) { return !t[3] || shown(t[3]); });
 
   var shared = { planning: p, code: code, reload: reload, toast: props.toast, authorName: name };
 
@@ -2688,6 +3019,7 @@ function ModelApp(props) {
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
         : tab === "termine" ? h(Scheduling, { planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "bereiche" ? h(Genres, { planning: p, genres: bundle.genres, code: code, reload: reload, toast: props.toast, authorName: name })
+        : tab === "anfahrt" ? h(MapView, { planning: p, code: code, reload: reload, toast: props.toast })
         : tab === "moodboard" ? h(Moodboard, { planning: p, images: bundle.images, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "ideen" ? h(Ideas, { planning: p, ideas: bundle.ideas, code: code, reload: reload, toast: props.toast, authorName: name })
         : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
@@ -2729,13 +3061,27 @@ function HostCard(props) {
       web ? h("a", { className: "btn btn-sm", href: web, target: "_blank", rel: "noopener noreferrer" }, extLabel(hst.website)) : null) : null);
 }
 
+function LockedView(props) {
+  return div({ className: "locked" },
+    div({ className: "box" },
+      props.host && props.host.avatar_url
+        ? Avatar({ url: props.host.avatar_url, name: props.host.display_name, size: 72 })
+        : null,
+      span({ className: "lab" }, "Noch in Vorbereitung"),
+      h2({ className: "serif", style: { fontSize: 25, letterSpacing: "-.02em" } }, props.title),
+      para({ className: "muted", style: { fontSize: 14.5, lineHeight: 1.6 } },
+        (props.host && props.host.display_name ? props.host.display_name + " stellt" : "Die Planung wird")
+        + " gerade zusammen. Sobald freigegeben ist, erscheint hier alles — du musst nichts weiter tun, die Seite aktualisiert sich von selbst."),
+      btn({ className: "btn btn-sm", onClick: props.onReload }, "Jetzt nachsehen")));
+}
+
 function ModelOverview(props) {
   var p = props.p, b = props.bundle;
   var mine = b.checklist.filter(function (x) { return x.assignee !== "fotograf"; });
   var done = mine.filter(function (x) { return x.done; }).length;
   return div({ className: "split" },
     div({ className: "cards" },
-      Card({ title: "Das Konzept", aside: span({ className: "lab" }, b.host && b.host.display_name ? "von " + b.host.display_name : "von der Inhaber:in") },
+      Card({ title: "Das Konzept", aside: span({ className: "lab" }, b.host && b.host.display_name ? "von " + b.host.display_name : "vom Planungsverantwortlichen") },
         p.concept
           ? para({ className: "serif", style: { fontSize: 16.5, lineHeight: 1.68, maxWidth: "62ch", whiteSpace: "pre-wrap" } }, p.concept)
           : Empty({}, "Das Konzept wird noch geschrieben.")),
