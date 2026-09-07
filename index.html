@@ -383,6 +383,29 @@ select.inp{appearance:none; padding-right:26px;
 }
 
 /* ============================================================
+   Profil
+   ============================================================ */
+.ava{
+  border-radius:50%; object-fit:cover; background:var(--sunken); flex:none;
+  border:1px solid var(--line-2); display:grid; place-items:center;
+  font-weight:600; color:var(--ink-2); overflow:hidden;
+}
+.ava-28{width:28px; height:28px; font-size:11px}
+.ava-36{width:36px; height:36px; font-size:13px}
+.ava-72{width:72px; height:72px; font-size:24px}
+.ava img{width:100%; height:100%; object-fit:cover; display:block}
+.me-btn{
+  display:flex; align-items:center; gap:9px; flex:1; min-width:0; padding:5px 6px;
+  border:1px solid transparent; background:transparent; border-radius:var(--r-sm); cursor:pointer; text-align:left;
+}
+.me-btn:hover{background:var(--sunken)}
+.me-btn .nm{font-size:12.5px; font-weight:500; line-height:1.2}
+.me-btn .rl{font-size:11px; color:var(--ink-3); line-height:1.2}
+.member-row{display:flex; align-items:center; gap:10px; padding:10px 16px}
+.member-row .nm{font-size:13.5px; font-weight:500}
+.member-row .rl{font-size:12px; color:var(--ink-3)}
+
+/* ============================================================
    Terminfindung
    ============================================================ */
 .cal-head{display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--line)}
@@ -653,7 +676,7 @@ var SHOT_STATUS = [["idee", "Idee"], ["geplant", "Geplant"], ["bestaetigt", "Bes
 var IDEA_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["pose", "Pose"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["requisite", "Requisite"]];
 var IMG_CAT = [["moodboard", "Moodboard"], ["pose", "Pose"], ["outfit", "Outfit"], ["location", "Location"], ["licht", "Licht"], ["makeup", "Make-up"], ["ergebnis", "Ergebnis"]];
 var CHECK_CAT = [["allgemein", "Allgemein"], ["outfit", "Outfit"], ["equipment", "Equipment"], ["requisite", "Requisite"], ["organisation", "Organisation"]];
-var ASSIGNEE = [["fotograf", "Fotograf:in"], ["model", "Model"], ["beide", "Gemeinsam"]];
+var ASSIGNEE = [["fotograf", "Inhaber:in"], ["model", "Gast"], ["beide", "Gemeinsam"]];
 var MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function lbl(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return v; }
@@ -710,10 +733,10 @@ function copyText(t, done) {
 }
 /* Handyfotos sind schnell 6 MB gross. Vor dem Upload auf 2000 px lange Kante
    und JPEG 82 % bringen — spart Speicher und laedt im Moodboard viel schneller. */
-var MAX_EDGE = 2000;
-function compressImage(file) {
+function compressImage(file, maxEdge) {
+  var MAX_EDGE = maxEdge || 2000;
   if (!file || !/^image\/(jpeg|jpg|png|webp)$/i.test(file.type || "")) return Promise.resolve(file);
-  if (file.size < 500 * 1024) return Promise.resolve(file);
+  if (!maxEdge && file.size < 500 * 1024) return Promise.resolve(file);
   return new Promise(function (resolve) {
     var url, img = new Image();
     function give(f) { try { URL.revokeObjectURL(url); } catch (e) {} resolve(f); }
@@ -722,7 +745,7 @@ function compressImage(file) {
         var w = img.naturalWidth, hh = img.naturalHeight;
         if (!w || !hh) return give(file);
         var scale = Math.min(1, MAX_EDGE / Math.max(w, hh));
-        if (scale === 1 && file.size < 2 * 1024 * 1024) return give(file);
+        if (scale === 1 && !maxEdge && file.size < 2 * 1024 * 1024) return give(file);
         var c = document.createElement("canvas");
         c.width = Math.max(1, Math.round(w * scale));
         c.height = Math.max(1, Math.round(hh * scale));
@@ -949,18 +972,18 @@ function Entrance(props) {
           div({ className: "name" }, "Kontaktbogen"),
           div({ className: "sub" }, "Shooting-Planung"))),
       div(null,
-        h1(null, "Alles zum Shooting an einem Ort — auch für dein Model."),
+        h1(null, "Ein Ort für alles, was vor dem Auslöser passiert."),
         para({ className: "lead", style: { marginTop: 16 } },
-          "Konzept, Moodboard, Shotlist, Outfits und der Ablauf am Set. Du planst, dein Model kommt mit einem Zugangscode dazu und bringt eigene Ideen und Referenzen mit ein. Ohne Konto, ohne App.")),
+          "Konzept, Terminfindung, Moodboard, Shotlist, Outfits und der Ablauf am Set. Wer die Planung anlegt, führt sie — die andere Seite kommt per Zugangscode dazu und bringt eigene Ideen und Referenzen ein. Ob Fotograf:in oder Model spielt keine Rolle.")),
       div({ className: "facts" },
         div(null, bb(null, "1 Code"), span(null, "pro Planung, jederzeit erneuerbar")),
         div(null, bb(null, "7 Bereiche"), span(null, "vom Konzept bis zum Zeitplan")),
-        div(null, bb(null, "Kein Konto"), span(null, "für das Model nötig")))),
+        div(null, bb(null, "Kein Konto"), span(null, "für Gäste nötig")))),
 
     div({ className: "right" },
       div({ className: "seg" },
-        btn({ className: mode === "model" ? "on" : "", onClick: function () { setMode("model"); setErr(""); } }, "Ich bin das Model"),
-        btn({ className: mode === "admin" ? "on" : "", onClick: function () { setMode("admin"); setErr(""); } }, "Ich fotografiere")),
+        btn({ className: mode === "model" ? "on" : "", onClick: function () { setMode("model"); setErr(""); } }, "Mit Zugangscode"),
+        btn({ className: mode === "admin" ? "on" : "", onClick: function () { setMode("admin"); setErr(""); } }, "Mit Konto")),
 
       mode === "model"
         ? frm({ className: "col", onSubmit: function (ev) { ev.preventDefault(); enter(code); } },
@@ -973,7 +996,7 @@ function Entrance(props) {
             btn({ className: "btn btn-pri btn-wide", disabled: busy },
               busy ? span({ className: "spin" }) : null, "Planung öffnen"),
             para({ className: "muted", style: { fontSize: 13 } },
-              "Den Code bekommst du von deiner Fotograf:in. Er gilt für genau ein Shooting."))
+              "Den Code bekommst du von der Person, die die Planung angelegt hat. Er gilt für genau ein Shooting."))
         : frm({ className: "col", onSubmit: login },
             Field({ label: "E-Mail" },
               inp({ className: "inp", type: "email", value: email, autoComplete: "email", placeholder: "du@studio.de",
@@ -995,9 +1018,153 @@ function Entrance(props) {
 }
 
 /* ============================================================
-   Fotograf:innen-Ansicht
+   Profil
+   ============================================================ */
+function initials(name) {
+  var p = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return "?";
+  return (p[0][0] + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
+}
+function Avatar(props) {
+  var size = props.size || 28;
+  return div({ className: "ava ava-" + size, title: props.name || "" },
+    props.url ? im({ src: props.url, alt: props.name || "" }) : initials(props.name));
+}
+
+function ProfileSheet(props) {
+  var pf = props.profile || {};
+  var a = useState({
+    display_name: pf.display_name || "", role_label: pf.role_label || "", city: pf.city || "",
+    phone: pf.phone || "", instagram: pf.instagram || "", website: pf.website || "", bio: pf.bio || ""
+  }), f = a[0], setF = a[1];
+  var b = useState(pf.avatar_url || ""), avatar = b[0], setAvatar = b[1];
+  var c = useState(pf.avatar_path || ""), avatarPath = c[0], setAvatarPath = c[1];
+  var d = useState(false), busy = d[0], setBusy = d[1];
+  var e2 = useState(""), err = e2[0], setErr = e2[1];
+  var fileRef = useRef(null);
+  function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  function pickAvatar(list) {
+    if (!list || !list.length) return;
+    setBusy(true);
+    compressImage(list[0], 512).then(function (small) {
+      var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+      var path = props.userId + "/" + id + ".jpg";
+      return sb.storage.from("profiles").upload(path, small, { contentType: small.type || "image/jpeg" })
+        .then(function (r) {
+          if (r.error) throw r.error;
+          var old = avatarPath;
+          setAvatarPath(path);
+          setAvatar(sb.storage.from("profiles").getPublicUrl(path).data.publicUrl);
+          if (old) sb.storage.from("profiles").remove([old]);
+        });
+    }).then(function () { setBusy(false); }, function (er) { setBusy(false); setErr("Bild konnte nicht geladen werden: " + (er.message || er)); });
+  }
+
+  function save(ev) {
+    ev.preventDefault();
+    if (!f.display_name.trim()) { setErr("Bitte trag einen Namen ein — er steht unter deinen Beiträgen."); return; }
+    setBusy(true); setErr("");
+    sb.from("ps_profiles").update({
+      display_name: f.display_name.trim(), role_label: f.role_label || null, city: f.city || null,
+      phone: f.phone || null, instagram: f.instagram || null, website: f.website || null,
+      bio: f.bio || null, avatar_url: avatar || null, avatar_path: avatarPath || null, updated_at: new Date().toISOString()
+    }).eq("user_id", props.userId).then(function (r) {
+      setBusy(false);
+      if (r.error) { setErr(r.error.message); return; }
+      props.done();
+    });
+  }
+
+  var first = !pf.display_name;
+
+  return div({ className: "scrim", onMouseDown: function (ev) { if (ev.target === ev.currentTarget && !first) props.close(); } },
+    frm({ className: "sheetbox", onSubmit: save, style: { maxHeight: "92vh", overflowY: "auto" } },
+      div({ style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line)" } },
+        h3(null, first ? "Willkommen — kurz dein Profil" : "Mein Profil"),
+        first ? null : btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: props.close }, "Schließen")),
+      div({ style: { padding: 16, display: "flex", flexDirection: "column", gap: 14 } },
+        first ? para({ className: "muted", style: { fontSize: 13 } },
+          "Dein Name erscheint unter deinen Ideen, Nachrichten und Kalendereinträgen. Alles Weitere ist freiwillig.") : null,
+        div({ className: "row", style: { alignItems: "center", gap: 14 } },
+          Avatar({ url: avatar, name: f.display_name, size: 72 }),
+          div({ className: "col", style: { gap: 6 } },
+            inp({ ref: fileRef, type: "file", accept: "image/*", style: { display: "none" },
+              onChange: function (ev) { pickAvatar(ev.target.files); } }),
+            btn({ type: "button", className: "btn btn-sm", disabled: busy,
+              onClick: function () { if (fileRef.current) fileRef.current.click(); } },
+              busy ? span({ className: "spin" }) : null, avatar ? "Bild wechseln" : "Bild wählen"),
+            avatar ? btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: function () {
+              if (avatarPath) sb.storage.from("profiles").remove([avatarPath]);
+              setAvatar(""); setAvatarPath("");
+            } }, "Entfernen") : null)),
+        div({ className: "g2" },
+          Field({ label: "Name" },
+            inp({ className: "inp", value: f.display_name, autoFocus: true, placeholder: "Alex Glauche",
+              onChange: function (ev) { set("display_name", ev.target.value); } })),
+          Field({ label: "Was machst du" },
+            inp({ className: "inp", value: f.role_label, placeholder: "Fotografin, Model, MUA …",
+              onChange: function (ev) { set("role_label", ev.target.value); } })),
+          Field({ label: "Ort" },
+            inp({ className: "inp", value: f.city, placeholder: "Hamburg",
+              onChange: function (ev) { set("city", ev.target.value); } })),
+          Field({ label: "Telefon" },
+            inp({ className: "inp", value: f.phone, placeholder: "Für kurzfristige Absprachen",
+              onChange: function (ev) { set("phone", ev.target.value); } })),
+          Field({ label: "Instagram" },
+            inp({ className: "inp", value: f.instagram, placeholder: "@name",
+              onChange: function (ev) { set("instagram", ev.target.value); } })),
+          Field({ label: "Website" },
+            inp({ className: "inp", value: f.website, placeholder: "https://…",
+              onChange: function (ev) { set("website", ev.target.value); } }))),
+        Field({ label: "Kurz zu dir" },
+          txa({ className: "inp", rows: 3, value: f.bio, placeholder: "Ein, zwei Sätze — was du machst, worauf du Lust hast.",
+            onChange: function (ev) { set("bio", ev.target.value); } })),
+        err ? div({ className: "hint bad" }, err) : null,
+        btn({ className: "btn btn-pri btn-wide", disabled: busy },
+          busy ? span({ className: "spin" }) : null, first ? "Los geht's" : "Profil speichern"))));
+}
+
+function JoinSheet(props) {
+  var a = useState(""), code = a[0], setCode = a[1];
+  var b = useState(false), busy = b[0], setBusy = b[1];
+  var c = useState(""), err = c[0], setErr = c[1];
+
+  function join(ev) {
+    ev.preventDefault();
+    if (code.length < 4) { setErr("Bitte den achtstelligen Code eingeben."); return; }
+    setBusy(true); setErr("");
+    sb.rpc("ps_join_with_code", { p_code: code }).then(function (r) {
+      setBusy(false);
+      if (r.error) {
+        setErr(/INVALID_CODE/.test(r.error.message) ? "Dieser Code gehört zu keiner aktiven Planung." : r.error.message);
+        return;
+      }
+      props.done(r.data && r.data.planning_id, r.data && r.data.role);
+    });
+  }
+
+  return div({ className: "scrim", onMouseDown: function (ev) { if (ev.target === ev.currentTarget) props.close(); } },
+    frm({ className: "sheetbox", onSubmit: join },
+      div({ style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line)" } },
+        h3(null, "Einer Planung beitreten"),
+        btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: props.close }, "Schließen")),
+      div({ style: { padding: 16, display: "flex", flexDirection: "column", gap: 14 } },
+        para({ className: "muted", style: { fontSize: 13 } },
+          "Du hast einen Zugangscode bekommen? Trag ihn einmal ein — danach findest du die Planung dauerhaft in deiner Liste."),
+        Field({ label: "Zugangscode" },
+          inp({ className: "inp codefield", value: code, maxLength: 8, autoFocus: true, placeholder: "XXXXXXXX",
+            onChange: function (ev) { setCode(ev.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "")); } })),
+        err ? div({ className: "hint bad" }, err) : null,
+        btn({ className: "btn btn-pri btn-wide", disabled: busy },
+          busy ? span({ className: "spin" }) : null, "Beitreten"))));
+}
+
+/* ============================================================
+   Angemeldete Ansicht
    ============================================================ */
 function AdminApp(props) {
+  var uid = props.session.user.id;
   var a = useState([]), plans = a[0], setPlans = a[1];
   var b = useState(null), sel = b[0], setSel = b[1];
   var c = useState(null), data = c[0], setData = c[1];
@@ -1006,7 +1173,23 @@ function AdminApp(props) {
   var f = useState(false), newOpen = f[0], setNewOpen = f[1];
   /* Auf schmalen Displays sind Liste und Detail zwei getrennte Ansichten. */
   var g = useState("list"), mView = g[0], setMView = g[1];
+  var pr = useState(null), profile = pr[0], setProfile = pr[1];
+  var po = useState(false), profileOpen = po[0], setProfileOpen = po[1];
+  var jo = useState(false), joinOpen = jo[0], setJoinOpen = jo[1];
   function pick(id) { setSel(id); setMView("detail"); }
+
+  var loadProfile = useCallback(function () {
+    return sb.rpc("ps_ensure_profile").then(function () {
+      return sb.from("ps_profiles").select("*").eq("user_id", uid).maybeSingle();
+    }).then(function (r) {
+      var pf = r.data || { user_id: uid, display_name: "" };
+      setProfile(pf);
+      if (!pf.display_name) setProfileOpen(true);
+      return pf;
+    });
+  }, [uid]);
+
+  var myName = (profile && profile.display_name) || (props.session.user.email || "").split("@")[0];
 
   var loadList = useCallback(function () {
     return sb.from("ps_plannings").select("*").order("created_at", { ascending: false }).then(function (r) {
@@ -1019,7 +1202,7 @@ function AdminApp(props) {
 
   var loadDetail = useCallback(function (id) {
     if (!id) { setData(null); return Promise.resolve(); }
-    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule", "ps_availability", "ps_proposals"];
+    var names = ["ps_ideas", "ps_images", "ps_comments", "ps_checklist", "ps_shots", "ps_schedule", "ps_availability", "ps_proposals", "ps_planning_members"];
     return Promise.all(names.map(function (n) { return sb.from(n).select("*").eq("planning_id", id); }))
       .then(function (res) {
         function s(i) { return res[i].data || []; }
@@ -1033,12 +1216,31 @@ function AdminApp(props) {
           shots: s(4).sort(byPos),
           schedule: s(5).sort(function (x, y) { return String(x.time_from || "").localeCompare(String(y.time_from || "")) || byPos(x, y); }),
           availability: s(6).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)); }),
-          proposals: s(7).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)) || String(x.time_from).localeCompare(String(y.time_from)); })
+          proposals: s(7).sort(function (x, y) { return String(x.cal_day).localeCompare(String(y.cal_day)) || String(x.time_from).localeCompare(String(y.time_from)); }),
+          members: s(8)
         });
+        /* Namen und Bilder der Beteiligten nachladen */
+        var ids = s(8).map(function (m) { return m.user_id; });
+        if (!ids.length) return;
+        return sb.from("ps_profiles").select("user_id,display_name,role_label,avatar_url,city")
+          .in("user_id", ids).then(function (pr) {
+            var map = {};
+            (pr.data || []).forEach(function (x) { map[x.user_id] = x; });
+            setData(function (old2) {
+              if (!old2) return old2;
+              var copy = {}; for (var k in old2) copy[k] = old2[k];
+              copy.members = old2.members.map(function (m) {
+                var c2 = {}; for (var k2 in m) c2[k2] = m[k2];
+                c2.profile = map[m.user_id] || null; return c2;
+              });
+              return copy;
+            });
+          });
       });
   }, []);
 
   useEffect(function () {
+    loadProfile();
     loadList().then(function (rows) { if (rows.length) setSel(rows[0].id); });
   }, []);
   useEffect(function () { loadDetail(sel); }, [sel]);
@@ -1046,21 +1248,27 @@ function AdminApp(props) {
   var planning = null;
   for (var i = 0; i < plans.length; i++) if (plans[i].id === sel) planning = plans[i];
 
-  var groups = useMemo(function () {
+  var sections = useMemo(function () {
     var needle = q.trim().toLowerCase();
     var list = plans.filter(function (p) {
       if (!needle) return true;
       return (p.title + " " + (p.model_name || "") + " " + p.access_code + " " + (p.location || "")).toLowerCase().indexOf(needle) >= 0;
     });
-    var up = [], open = [], past = [];
-    list.forEach(function (p) {
-      var n = daysUntil(p.shoot_date);
-      if (n === null) open.push(p); else if (n >= 0) up.push(p); else past.push(p);
-    });
-    up.sort(function (x, y) { return String(x.shoot_date).localeCompare(String(y.shoot_date)); });
-    past.sort(function (x, y) { return String(y.shoot_date).localeCompare(String(x.shoot_date)); });
-    return [["Anstehend", up], ["Ohne Termin", open], ["Vergangen", past]];
-  }, [plans, q]);
+    function byDate(arr) {
+      var up = [], open = [], past = [];
+      arr.forEach(function (p) {
+        var n = daysUntil(p.shoot_date);
+        if (n === null) open.push(p); else if (n >= 0) up.push(p); else past.push(p);
+      });
+      up.sort(function (x, y) { return String(x.shoot_date).localeCompare(String(y.shoot_date)); });
+      past.sort(function (x, y) { return String(y.shoot_date).localeCompare(String(x.shoot_date)); });
+      return up.concat(open, past);
+    }
+    return [
+      ["Meine Planungen", byDate(list.filter(function (p) { return p.owner_id === uid; }))],
+      ["Ich bin dabei", byDate(list.filter(function (p) { return p.owner_id !== uid; }))]
+    ];
+  }, [plans, q, uid]);
 
   function created(row) {
     setNewOpen(false);
@@ -1076,7 +1284,9 @@ function AdminApp(props) {
           div({ className: "name" }, "Kontaktbogen"),
           div({ className: "sub" }, "Shooting-Planung"))),
       div({ className: "rail-tools" },
-        btn({ className: "btn btn-pri btn-wide", onClick: function () { setNewOpen(true); } }, "Neue Planung"),
+        div({ className: "row", style: { gap: 6, flexWrap: "nowrap" } },
+          btn({ className: "btn btn-pri", style: { flex: 1 }, onClick: function () { setNewOpen(true); } }, "Neue Planung"),
+          btn({ className: "btn", onClick: function () { setJoinOpen(true); }, title: "Mit Zugangscode beitreten" }, "Beitreten")),
         div({ className: "search" }, SearchIcon(),
           inp({ className: "inp", value: q, placeholder: "Titel, Model, Code …",
             onChange: function (ev) { setQ(ev.target.value); } }))),
@@ -1085,7 +1295,7 @@ function AdminApp(props) {
         !loading && plans.length === 0
           ? div({ style: { padding: "6px 8px" } }, Empty({}, "Noch keine Planung angelegt."))
           : null,
-        groups.map(function (grp) {
+        sections.map(function (grp) {
           if (!grp[1].length) return null;
           return div({ key: grp[0] },
             div({ className: "group-head" }, span({ className: "lab" }, grp[0]), div({ className: "rule" }),
@@ -1093,21 +1303,39 @@ function AdminApp(props) {
             grp[1].map(function (p) { return h(PlanEntry, { key: p.id, p: p, on: p.id === sel, pick: pick }); }));
         })),
       div({ className: "rail-foot" },
-        span({ className: "who trunc" }, props.session.user.email),
+        btn({ className: "me-btn", onClick: function () { setProfileOpen(true); }, title: "Profil bearbeiten" },
+          Avatar({ url: profile && profile.avatar_url, name: myName, size: 36 }),
+          div({ style: { minWidth: 0 } },
+            div({ className: "nm trunc" }, myName),
+            div({ className: "rl trunc" }, (profile && profile.role_label) || "Profil bearbeiten"))),
         h(ThemeBtn),
         btn({ className: "btn btn-quiet btn-sm", onClick: function () { sb.auth.signOut(); } }, "Abmelden"))),
 
     div({ className: "col-main" },
       planning
         ? h(PlanningView, {
-            key: planning.id, planning: planning, data: data,
+            key: planning.id, planning: planning, data: data, userId: uid, myName: myName,
+            myAvatar: profile && profile.avatar_url,
             reloadList: loadList, reloadDetail: function () { return loadDetail(planning.id); },
             clearSel: function () { setSel(null); setMView("list"); },
             onBack: function () { setMView("list"); }, toast: props.toast
           })
         : div({ className: "content" }, Empty({}, "Wähle eine Planung aus oder lege eine neue an."))),
 
-    newOpen ? h(NewPlanning, { session: props.session, close: function () { setNewOpen(false); }, done: created, toast: props.toast }) : null);
+    newOpen ? h(NewPlanning, { session: props.session, close: function () { setNewOpen(false); }, done: created, toast: props.toast }) : null,
+    profileOpen && profile ? h(ProfileSheet, {
+      profile: profile, userId: uid,
+      close: function () { setProfileOpen(false); },
+      done: function () { setProfileOpen(false); loadProfile(); props.toast("Profil gespeichert"); }
+    }) : null,
+    joinOpen ? h(JoinSheet, {
+      close: function () { setJoinOpen(false); },
+      done: function (pid, role) {
+        setJoinOpen(false);
+        loadList().then(function () { if (pid) pick(pid); });
+        props.toast(role === "inhaber" ? "Das ist deine eigene Planung." : "Planung hinzugefügt");
+      }
+    }) : null);
 }
 
 function PlanEntry(props) {
@@ -1164,7 +1392,7 @@ function NewPlanning(props) {
             inp({ className: "inp", type: "date", value: date,
               onChange: function (ev) { setDate(ev.target.value); } }))),
         para({ className: "muted", style: { fontSize: 12.5 } },
-          "Der Zugangscode für das Model wird beim Anlegen automatisch erzeugt."),
+          "Der Zugangscode für Gäste wird beim Anlegen automatisch erzeugt."),
         btn({ className: "btn btn-pri btn-wide", disabled: busy },
           busy ? span({ className: "spin" }) : null, "Anlegen"))));
 }
@@ -1173,7 +1401,16 @@ function NewPlanning(props) {
 function PlanningView(props) {
   var a = useState("uebersicht"), tab = a[0], setTab = a[1];
   var p = props.planning, d = props.data;
+  var owner = p.owner_id === props.userId;
   var openChecks = d ? d.checklist.filter(function (x) { return !x.done; }).length : 0;
+  /* Gemeinsame Angaben für alle Unterbereiche */
+  var ctx = { userId: props.userId, authorName: props.myName, reload: props.reloadDetail, toast: props.toast };
+  function withCtx(extra) {
+    var o = { planning: p, admin: owner };
+    for (var k in ctx) o[k] = ctx[k];
+    for (var k2 in extra) o[k2] = extra[k2];
+    return o;
+  }
 
   var openProps = d ? d.proposals.filter(function (x) { return x.status === "offen"; }).length : 0;
   var tabs = [
@@ -1202,9 +1439,10 @@ function PlanningView(props) {
           h1({ className: "trunc" }, p.title)),
         div({ className: "tb-acts" },
           Status({ value: p.status }),
-          btn({ className: "btn btn-sm", onClick: copyCode },
+          owner ? btn({ className: "btn btn-sm", onClick: copyCode },
             span({ className: "not-m" }, "Zugangslink kopieren"),
-            span({ className: "only-m" }, "Link teilen"))))),
+            span({ className: "only-m" }, "Link teilen"))
+          : span({ className: "lab" }, "Du bist Gast")))),
     div({ className: "tabs" },
       tabs.map(function (t) {
         return btn({ key: t[0], className: "tab" + (tab === t[0] ? " on" : ""), onClick: function () { setTab(t[0]); } },
@@ -1212,14 +1450,17 @@ function PlanningView(props) {
       })),
     div({ className: "content" },
       !d ? Empty({}, "Lade Planungsdaten …")
-        : tab === "uebersicht" ? h(Overview, { planning: p, data: d, reloadList: props.reloadList, clearSel: props.clearSel, toast: props.toast })
-        : tab === "termine" ? h(Scheduling, { planning: p, availability: d.availability, proposals: d.proposals, admin: true, reload: props.reloadDetail, reloadList: props.reloadList, toast: props.toast })
-        : tab === "moodboard" ? h(Moodboard, { planning: p, images: d.images, admin: true, reload: props.reloadDetail, toast: props.toast })
-        : tab === "ideen" ? h(Ideas, { planning: p, ideas: d.ideas, admin: true, reload: props.reloadDetail, toast: props.toast })
-        : tab === "shotlist" ? h(Shotlist, { planning: p, shots: d.shots, admin: true, reload: props.reloadDetail, toast: props.toast })
-        : tab === "checkliste" ? h(Checklist, { planning: p, items: d.checklist, admin: true, reload: props.reloadDetail, toast: props.toast })
-        : tab === "zeitplan" ? h(Schedule, { planning: p, rows: d.schedule, admin: true, reload: props.reloadDetail, toast: props.toast })
-        : h(Chat, { planning: p, comments: d.comments, admin: true, reload: props.reloadDetail, toast: props.toast })));
+        : tab === "uebersicht"
+            ? (owner ? h(Overview, { planning: p, data: d, reloadList: props.reloadList, reloadDetail: props.reloadDetail,
+                                     clearSel: props.clearSel, toast: props.toast, myName: props.myName, myAvatar: props.myAvatar })
+                     : h(ModelOverview, { p: p, bundle: d, name: props.myName }))
+        : tab === "termine" ? h(Scheduling, withCtx({ availability: d.availability, proposals: d.proposals, reloadList: props.reloadList }))
+        : tab === "moodboard" ? h(Moodboard, withCtx({ images: d.images }))
+        : tab === "ideen" ? h(Ideas, withCtx({ ideas: d.ideas }))
+        : tab === "shotlist" ? h(Shotlist, withCtx({ shots: d.shots }))
+        : tab === "checkliste" ? h(Checklist, withCtx({ items: d.checklist }))
+        : tab === "zeitplan" ? h(Schedule, withCtx({ rows: d.schedule }))
+        : h(Chat, withCtx({ comments: d.comments }))));
 }
 
 /* ---------- Übersicht ---------- */
@@ -1317,7 +1558,7 @@ function Overview(props) {
           btn({ className: "btn btn-quiet btn-sm btn-danger", onClick: del }, "Planung löschen")))),
 
     div({ className: "cards" },
-      Card({ title: "Zugang für das Model", aside: span({ className: "st " + (p.code_active ? "st-bestaetigt" : "st-verworfen") }, ii(null), p.code_active ? "aktiv" : "gesperrt") },
+      Card({ title: "Zugang für Gäste", aside: span({ className: "st " + (p.code_active ? "st-bestaetigt" : "st-verworfen") }, ii(null), p.code_active ? "aktiv" : "gesperrt") },
         div({ className: "access" },
           div({ className: "val" }, p.access_code),
           div({ className: "acts" },
@@ -1326,7 +1567,35 @@ function Overview(props) {
             btn({ onClick: toggleCode }, p.code_active ? "Sperren" : "Freigeben"),
             btn({ onClick: newCode }, "Neu"))),
         para({ className: "muted", style: { fontSize: 12.5, marginTop: 12 } },
-          "Mit diesem Code sieht dein Model die Planung, steuert Ideen und Referenzbilder bei, hakt seine Aufgaben ab und stellt Fragen.")),
+          "Wer diesen Code hat, sieht die Planung, steuert Ideen und Referenzbilder bei, trägt Termine ein, hakt Aufgaben ab und stellt Fragen — mit oder ohne eigenes Konto.")),
+
+      Card({ title: "Beteiligte", flush: true, aside: span({ className: "lab tnum" }, (d.members || []).length + 1) },
+        div({ className: "rows" },
+          div({ className: "member-row" },
+            Avatar({ name: props.myName || "Du", url: props.myAvatar, size: 36 }),
+            div({ style: { flex: 1, minWidth: 0 } },
+              div({ className: "nm trunc" }, (props.myName || "Du") + " · du"),
+              div({ className: "rl" }, "Inhaber:in")),
+            span({ className: "st st-bestaetigt" }, ii(null), "alle Rechte")),
+          (d.members || []).map(function (m) {
+            var pf = m.profile || {};
+            return div({ key: m.user_id, className: "member-row" },
+              Avatar({ name: pf.display_name || "Gast", url: pf.avatar_url, size: 36 }),
+              div({ style: { flex: 1, minWidth: 0 } },
+                div({ className: "nm trunc" }, pf.display_name || "Ohne Namen"),
+                div({ className: "rl trunc" }, [pf.role_label, pf.city].filter(Boolean).join(" · ") || "Gast")),
+              btn({ className: "btn btn-quiet btn-sm btn-danger", title: "Zugang entziehen",
+                onClick: function () {
+                  if (!confirm("Zugang für " + (pf.display_name || "diese Person") + " entziehen?")) return;
+                  sb.from("ps_planning_members").delete().eq("planning_id", p.id).eq("user_id", m.user_id)
+                    .then(function () { props.reloadDetail && props.reloadDetail(); props.toast("Zugang entzogen"); });
+                } }, "×"));
+          }),
+          (d.members || []).length === 0
+            ? div({ style: { padding: "12px 16px" } },
+                para({ className: "dim", style: { fontSize: 13 } },
+                  "Noch niemand mit eigenem Konto dabei. Wer den Zugangscode hat, kann ohne Konto mitarbeiten oder ihn im eigenen Konto unter „Beitreten“ eintragen."))
+            : null)),
 
       Card({ title: "Vorbereitung" },
         div({ className: "ringwrap" },
@@ -1365,13 +1634,22 @@ function Moodboard(props) {
   var shown = filter === "alle" ? images : images.filter(function (x) { return x.category === filter; });
 
   function record(rec) {
-    var q = admin
-      ? sb.from("ps_images").insert({
-          planning_id: p.id, storage_path: rec.path || null, url: rec.url,
-          caption: caption || null, category: cat, author_role: "admin", author_name: "Fotograf:in" })
-      : sb.rpc("ps_add_image", {
-          p_code: code, p_author: props.authorName, p_url: rec.url,
-          p_storage_path: rec.path || null, p_caption: caption || null, p_category: cat });
+    var base = {
+      planning_id: p.id, storage_path: rec.path || null, url: rec.url,
+      caption: caption || null, category: cat
+    };
+    var q;
+    if (admin) {
+      base.author_role = "admin"; base.author_name = props.authorName || "Inhaber:in"; base.author_id = props.userId || null;
+      q = sb.from("ps_images").insert(base);
+    } else if (code) {
+      q = sb.rpc("ps_add_image", {
+        p_code: code, p_author: props.authorName, p_url: rec.url,
+        p_storage_path: rec.path || null, p_caption: caption || null, p_category: cat });
+    } else {
+      base.author_role = "model"; base.author_name = props.authorName || "Gast"; base.author_id = props.userId || null;
+      q = sb.from("ps_images").insert(base);
+    }
     return Promise.resolve(q).then(function (r) { if (r && r.error) throw r.error; return r; });
   }
 
@@ -1441,10 +1719,11 @@ function Moodboard(props) {
               return figure({ key: img.id, className: "shot", style: { margin: 0 } },
                 im({ className: "ph", src: img.url, alt: img.caption || "Referenzbild", loading: "lazy" }),
                 span({ className: "no" }, String(i + 1).padStart(2, "0")),
-                admin ? btn({ className: "rm", title: "Entfernen", onClick: function () { remove(img); } }, "×") : null,
+                (admin || (props.userId && img.author_id === props.userId))
+                  ? btn({ className: "rm", title: "Entfernen", onClick: function () { remove(img); } }, "×") : null,
                 figcap({ className: "info" },
                   img.caption ? div({ className: "t" }, img.caption) : null,
-                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Fotograf:in" : "Model")))));
+                  div({ className: "m" }, lbl(IMG_CAT, img.category) + " · " + (img.author_name || (img.author_role === "admin" ? "Inhaber:in" : "Gast")))));
             }))));
 }
 
@@ -1461,13 +1740,19 @@ function Ideas(props) {
     ev.preventDefault();
     if (!title.trim()) return;
     setBusy(true);
-    var q = admin
-      ? sb.from("ps_ideas").insert({
-          planning_id: p.id, title: title.trim(), description: desc || null,
-          category: cat, author_role: "admin", author_name: "Fotograf:in" })
-      : sb.rpc("ps_add_idea", {
-          p_code: props.code, p_author: props.authorName, p_title: title.trim(),
-          p_description: desc || null, p_category: cat, p_image_url: null });
+    var base = { planning_id: p.id, title: title.trim(), description: desc || null, category: cat };
+    var q;
+    if (admin) {
+      base.author_role = "admin"; base.author_name = props.authorName || "Inhaber:in"; base.author_id = props.userId || null;
+      q = sb.from("ps_ideas").insert(base);
+    } else if (props.code) {
+      q = sb.rpc("ps_add_idea", {
+        p_code: props.code, p_author: props.authorName, p_title: title.trim(),
+        p_description: desc || null, p_category: cat, p_image_url: null });
+    } else {
+      base.author_role = "model"; base.author_name = props.authorName || "Gast"; base.author_id = props.userId || null;
+      q = sb.from("ps_ideas").insert(base);
+    }
     Promise.resolve(q).then(function (r) {
       setBusy(false);
       if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
@@ -1477,12 +1762,13 @@ function Ideas(props) {
   function setStatus(idea, st) { sb.from("ps_ideas").update({ status: st }).eq("id", idea.id).then(props.reload); }
   function remove(idea) {
     if (!confirm("Idee löschen?")) return;
-    var q = admin ? sb.from("ps_ideas").delete().eq("id", idea.id)
-                  : sb.rpc("ps_delete_idea", { p_code: props.code, p_idea_id: idea.id });
+    var q = (admin || !props.code)
+      ? sb.from("ps_ideas").delete().eq("id", idea.id)
+      : sb.rpc("ps_delete_idea", { p_code: props.code, p_idea_id: idea.id });
     Promise.resolve(q).then(props.reload);
   }
 
-  var filters = [["alle", "Alle"], ["model", "Vom Model"], ["admin", "Von der Fotograf:in"], ["offen", "Noch offen"]];
+  var filters = [["alle", "Alle"], ["model", "Von Gästen"], ["admin", "Von der Inhaber:in"], ["offen", "Noch offen"]];
   var shown = ideas.filter(function (x) {
     if (view === "model") return x.author_role === "model";
     if (view === "admin") return x.author_role === "admin";
@@ -1523,12 +1809,12 @@ function Ideas(props) {
                   x.description ? para({ className: "sub", style: { fontSize: 13, color: "var(--ink-2)", marginTop: 4, whiteSpace: "pre-wrap" } }, x.description) : null,
                   div({ className: "tagrow" },
                     span({ className: "tag" }, lbl(IDEA_CAT, x.category)),
-                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Fotograf:in" : "Model")),
+                    span({ className: "tag" }, x.author_name || (x.author_role === "admin" ? "Inhaber:in" : "Gast")),
                     span({ className: "tag tnum" }, fmtTs(x.created_at)))),
                 div({ className: "row acts", style: { gap: 6, flexWrap: "nowrap" } },
                   admin ? sel({ className: "inp inp-sm", value: x.status, onChange: function (ev) { setStatus(x, ev.target.value); } },
                     IDEA_STATUS.map(function (s) { return opt({ key: s[0], value: s[0] }, s[1]); })) : null,
-                  (admin || x.author_role === "model")
+                  (admin || (props.code ? x.author_role === "model" : x.author_id === props.userId))
                     ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { remove(x); }, title: "Löschen" }, "×") : null));
             }))));
 }
@@ -1626,9 +1912,11 @@ function Checklist(props) {
     if (!admin && it.assignee === "fotograf") return;
     var q = admin
       ? sb.from("ps_checklist").update({ done: !it.done }).eq("id", it.id)
-      : sb.rpc("ps_toggle_check", { p_code: props.code, p_item_id: it.id, p_done: !it.done });
+      : props.code
+        ? sb.rpc("ps_toggle_check", { p_code: props.code, p_item_id: it.id, p_done: !it.done })
+        : sb.rpc("ps_member_toggle_check", { p_item_id: it.id, p_done: !it.done });
     Promise.resolve(q).then(function (r) {
-      if (r && r.error) { props.toast("Das kann nur die Fotograf:in abhaken."); return; }
+      if (r && r.error) { props.toast("Diesen Punkt kann nur die Inhaber:in abhaken."); return; }
       props.reload();
     });
   }
@@ -1728,9 +2016,16 @@ function Chat(props) {
     if (ev && ev.preventDefault) ev.preventDefault();
     if (!body.trim()) return;
     setBusy(true);
-    var q = admin
-      ? sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(), author_role: "admin", author_name: "Fotograf:in" })
-      : sb.rpc("ps_add_comment", { p_code: props.code, p_author: props.authorName, p_body: body.trim(), p_idea_id: null });
+    var q;
+    if (admin) {
+      q = sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(),
+        author_role: "admin", author_name: props.authorName || "Inhaber:in", author_id: props.userId || null });
+    } else if (props.code) {
+      q = sb.rpc("ps_add_comment", { p_code: props.code, p_author: props.authorName, p_body: body.trim(), p_idea_id: null });
+    } else {
+      q = sb.from("ps_comments").insert({ planning_id: props.planning.id, body: body.trim(),
+        author_role: "model", author_name: props.authorName || "Gast", author_id: props.userId || null });
+    }
     Promise.resolve(q).then(function (r) {
       setBusy(false);
       if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
@@ -1746,7 +2041,7 @@ function Chat(props) {
         ? Empty({}, "Noch nichts besprochen. Schreib die erste Nachricht.")
         : props.comments.map(function (cm) {
             return div({ key: cm.id, className: "bubble" + (cm.author_role === mine ? " self" : "") },
-              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Fotograf:in" : "Model")), " · " + fmtTs(cm.created_at)),
+              div({ className: "who" }, bb(null, cm.author_name || (cm.author_role === "admin" ? "Inhaber:in" : "Gast")), " · " + fmtTs(cm.created_at)),
               div({ className: "txt" }, cm.body));
           }),
       div({ ref: endRef })),
@@ -1799,7 +2094,7 @@ function Scheduling(props) {
   var avail = props.availability || [], props_ = props.proposals || [];
   var party = admin ? "fotograf" : "model";
   var other = admin ? "model" : "fotograf";
-  var otherName = admin ? (p.model_name || "Model") : "Fotograf:in";
+  var otherName = admin ? (p.model_name || "Die andere Seite") : "Inhaber:in";
 
   var start = p.shoot_date ? new Date(p.shoot_date + "T00:00:00") : new Date();
   var a = useState({ y: start.getFullYear(), m: start.getMonth() }), cur = a[0], setCur = a[1];
@@ -1832,15 +2127,18 @@ function Scheduling(props) {
     if (f.from && f.to && toMin(f.to) <= toMin(f.from)) { props.toast("Das Ende muss nach dem Anfang liegen."); return; }
     setBusy(true);
     if (f.from && f.to) lastWin.current = { from: f.from, to: f.to };
-    var q = admin
-      ? sb.from("ps_availability").upsert({
-          planning_id: p.id, cal_day: selDay, party: "fotograf", state: f.state,
-          time_from: f.from || null, time_to: f.to || null, note: f.note || null, author_name: "Fotograf:in"
-        }, { onConflict: "planning_id,party,cal_day" })
-      : sb.rpc("ps_set_availability", {
-          p_code: props.code, p_author: props.authorName, p_day: selDay,
-          p_state: f.state, p_from: f.from || null, p_to: f.to || null, p_note: f.note || null
-        });
+    var q;
+    if (props.code) {
+      q = sb.rpc("ps_set_availability", {
+        p_code: props.code, p_author: props.authorName, p_day: selDay,
+        p_state: f.state, p_from: f.from || null, p_to: f.to || null, p_note: f.note || null });
+    } else {
+      q = sb.from("ps_availability").upsert({
+        planning_id: p.id, cal_day: selDay, party: party, state: f.state,
+        time_from: f.from || null, time_to: f.to || null, note: f.note || null,
+        author_name: props.authorName || (admin ? "Inhaber:in" : "Gast"), author_id: props.userId || null
+      }, { onConflict: "planning_id,party,cal_day" });
+    }
     Promise.resolve(q).then(function (r) {
       setBusy(false);
       if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
@@ -1850,9 +2148,9 @@ function Scheduling(props) {
   function clearDay() {
     if (!selDay) return;
     setBusy(true);
-    var q = admin
-      ? sb.from("ps_availability").delete().eq("planning_id", p.id).eq("party", "fotograf").eq("cal_day", selDay)
-      : sb.rpc("ps_clear_availability", { p_code: props.code, p_day: selDay });
+    var q = props.code
+      ? sb.rpc("ps_clear_availability", { p_code: props.code, p_day: selDay })
+      : sb.from("ps_availability").delete().eq("planning_id", p.id).eq("party", party).eq("cal_day", selDay);
     Promise.resolve(q).then(function () { setBusy(false); props.reload(); props.toast("Eintrag entfernt"); });
   }
 
@@ -1903,7 +2201,10 @@ function Scheduling(props) {
     sb.from("ps_proposals").update({ status: "zurueckgezogen" }).eq("id", v.id).then(function () { props.reload(); });
   }
   function vote(v, val) {
-    Promise.resolve(sb.rpc("ps_vote_proposal", { p_code: props.code, p_proposal_id: v.id, p_vote: val, p_comment: null }))
+    var q = props.code
+      ? sb.rpc("ps_vote_proposal", { p_code: props.code, p_proposal_id: v.id, p_vote: val, p_comment: null })
+      : sb.rpc("ps_member_vote_proposal", { p_proposal_id: v.id, p_vote: val, p_comment: null });
+    Promise.resolve(q)
       .then(function (r) {
         if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
         props.reload();
@@ -1951,15 +2252,15 @@ function Scheduling(props) {
             iso === p.shoot_date ? span({ className: "shoot", title: "Shootingtag" }) : null,
             span({ className: "n" }, dt.getDate()),
             div({ className: "cal-bars" },
-              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Fotograf:in" }),
-              ii({ className: v.model ? v.model.state : "", title: "Model" })));
+              ii({ className: v.fotograf ? v.fotograf.state : "", title: "Inhaber:in" }),
+              ii({ className: v.model ? v.model.state : "", title: "Gast" })));
         })),
 
       div({ className: "legend" },
         span(null, ii({ style: { background: "var(--ok)" } }), "Passt"),
         span(null, ii({ style: { background: "var(--warn)" } }), "Vielleicht"),
         span(null, ii({ style: { background: "var(--crit)" } }), "Passt nicht"),
-        span(null, span({ className: "dim" }, "Obere Leiste: Fotograf:in · untere: Model"))),
+        span(null, span({ className: "dim" }, "Obere Leiste: Inhaber:in · untere: Gast"))),
 
       /* ---------- Tageseditor ---------- */
       selDay ? div({ className: "daybox" },
@@ -2040,7 +2341,7 @@ function Scheduling(props) {
       props_.length === 0
         ? div({ style: { padding: 16 } }, Empty({},
             admin ? "Noch kein Vorschlag. Nimm einen passenden Tag von oben oder leg einen von Hand an."
-                  : "Deine Fotograf:in hat noch keinen konkreten Termin vorgeschlagen."))
+                  : "Es wurde noch kein konkreter Termin vorgeschlagen."))
         : div({ className: "rows" },
             props_.map(function (v) {
               var open = v.status === "offen";
@@ -2157,7 +2458,7 @@ function ModelOverview(props) {
   var done = mine.filter(function (x) { return x.done; }).length;
   return div({ className: "split" },
     div({ className: "cards" },
-      Card({ title: "Das Konzept", aside: span({ className: "lab" }, "von der Fotograf:in") },
+      Card({ title: "Das Konzept", aside: span({ className: "lab" }, "von der Inhaber:in") },
         p.concept
           ? para({ className: "serif", style: { fontSize: 16.5, lineHeight: 1.68, maxWidth: "62ch", whiteSpace: "pre-wrap" } }, p.concept)
           : Empty({}, "Das Konzept wird noch geschrieben.")),
