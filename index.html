@@ -636,6 +636,68 @@ select.inp{appearance:none; padding-right:26px;
   .lb-foot .cap{font-size:15px}
 }
 
+function extUrl(v) {
+  var s = String(v || "").trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.charAt(0) === "@") return "https://instagram.com/" + s.slice(1);
+  return "https://" + s;
+}
+function extLabel(v) {
+  var s = String(v || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
+  return s.length > 32 ? s.slice(0, 31) + "…" : s;
+}
+
+/* ============================================================
+   Rechtliches
+   ============================================================ */
+.legal{min-height:100dvh; background:var(--bg)}
+.legal-in{max-width:74ch; margin:0 auto; padding:28px 22px calc(70px + env(safe-area-inset-bottom))}
+@media (max-width:640px){.legal-in{padding:20px 16px calc(60px + env(safe-area-inset-bottom))}}
+.legal h1{font-size:26px; letter-spacing:-.025em; margin-bottom:6px}
+.legal h2{font-size:var(--fs-xl); margin:30px 0 8px; letter-spacing:-.015em}
+.legal h3{font-size:var(--fs-lg); margin:20px 0 6px}
+.legal p, .legal li{font-size:var(--fs-md); line-height:1.68; color:var(--ink-2)}
+.legal p{margin:8px 0}
+.legal ul{margin:8px 0; padding-left:20px}
+.legal li{margin:5px 0}
+.legal strong{color:var(--ink); font-weight:600}
+.legal .adr{font-style:normal; line-height:1.7; font-size:var(--fs-md)}
+.legal dl.dl{margin-top:6px}
+.legal-bar{
+  position:sticky; top:0; z-index:20; background:var(--bg); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:12px; padding:12px 22px;
+  padding-top:calc(12px + env(safe-area-inset-top));
+}
+@media (max-width:640px){.legal-bar{padding:10px 16px; padding-top:calc(10px + env(safe-area-inset-top))}}
+.legal-bar .sp{flex:1}
+.sitefoot{
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:center;
+  padding:22px 16px calc(22px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line); margin-top:auto;
+}
+.sitefoot button, .sitefoot a{
+  background:none; border:none; padding:4px 2px; cursor:pointer; font-size:var(--fs-sm);
+  color:var(--ink-3); text-decoration:none;
+}
+.sitefoot button:hover, .sitefoot a:hover{color:var(--ink); text-decoration:underline}
+.rail-legal{display:flex; gap:10px; flex-wrap:wrap; padding:0 14px 12px}
+.rail-legal button{
+  background:none; border:none; padding:2px; cursor:pointer; font-size:var(--fs-xs); color:var(--ink-3);
+}
+.rail-legal button:hover{color:var(--ink); text-decoration:underline}
+.paypal{
+  display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line-2);
+  background:var(--surface); color:var(--ink); padding:9px 15px; border-radius:var(--r-sm);
+  font-size:var(--fs-md); font-weight:500; text-decoration:none; box-shadow:var(--shadow-1);
+}
+.paypal:hover{background:var(--sunken); border-color:var(--line-3)}
+.paypal .pp{font-weight:700; letter-spacing:-.02em; font-style:italic; color:var(--accent)}
+.gap-warn{
+  border:1px solid var(--crit); background:var(--crit-tint); color:var(--crit);
+  border-radius:var(--r-sm); padding:12px 14px; font-size:var(--fs-md); margin:14px 0;
+}
+
 /* Sonstiges */
 .spin{display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -1162,7 +1224,357 @@ function Entrance(props) {
 
       err ? div({ className: "hint bad" }, err) : null,
       info ? div({ className: "hint" }, info) : null,
-      div({ style: { marginTop: 4 } }, h(ThemeBtn))));
+      div({ style: { marginTop: 4 } }, h(ThemeBtn)),
+      h(SiteFoot, { site: props.site, onPage: props.onLegal })));
+}
+
+/* ============================================================
+   Rechtliches
+   ============================================================ */
+function siteAddr(st) {
+  var line = [st.street, [st.zip, st.city].filter(Boolean).join(" ")].filter(Boolean);
+  if (st.country) line.push(st.country);
+  return line;
+}
+function siteComplete(st) {
+  return !!(st && st.operator_name && st.street && st.zip && st.city && st.email);
+}
+
+function PayPalButton(props) {
+  var st = props.site || {};
+  if (!st.paypal_url) return null;
+  return h("a", {
+    className: "paypal", href: extUrl(st.paypal_url), target: "_blank", rel: "noopener noreferrer"
+  }, span({ className: "pp" }, "PayPal"), props.label || "Unterstützen");
+}
+
+function Impressum(props) {
+  var st = props.site || {};
+  var addr = siteAddr(st);
+  return div({ className: "legal-in" },
+    h1(null, "Impressum"),
+    para({ className: "lab" }, "Angaben gemäß § 5 DDG"),
+
+    !siteComplete(st)
+      ? div({ className: "gap-warn" },
+          "Dieses Impressum ist noch unvollständig. Als Betreiber kannst du die fehlenden Angaben "
+          + "unter „Rechtliches“ in der Seitenleiste eintragen. Solange etwas fehlt, erfüllt die Seite "
+          + "die gesetzlichen Anforderungen nicht.")
+      : null,
+
+    h2(null, "Diensteanbieter"),
+    h("address", { className: "adr" },
+      st.operator_name ? div(null, bb(null, st.operator_name)) : div({ className: "dim" }, "[Vollständiger Name fehlt]"),
+      st.operator_addition ? div(null, st.operator_addition) : null,
+      addr.length ? addr.map(function (l, i) { return div({ key: i }, l); })
+                  : div({ className: "dim" }, "[Ladungsfähige Anschrift fehlt]")),
+
+    h2(null, "Kontakt"),
+    dl({ className: "dl" },
+      div(null, dt({ className: "lab" }, "E-Mail"),
+        dd(null, st.email ? h("a", { href: "mailto:" + st.email }, st.email) : span({ className: "dim" }, "[fehlt]"))),
+      div(null, dt({ className: "lab" }, "Telefon"),
+        dd(null, st.phone || span({ className: "dim" }, "[fehlt]"))),
+      st.register_entry ? div(null, dt({ className: "lab" }, "Register"), dd(null, st.register_entry)) : null,
+      st.vat_id ? div(null, dt({ className: "lab" }, "USt-IdNr."), dd(null, st.vat_id)) : null,
+      st.authority ? div(null, dt({ className: "lab" }, "Aufsicht"), dd(null, st.authority)) : null),
+
+    st.responsible_person
+      ? h(Frag, null, h2(null, "Redaktionell verantwortlich"), para(null, st.responsible_person))
+      : null,
+
+    h2(null, "Streitbeilegung"),
+    para(null,
+      "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung bereit: ",
+      h("a", { href: "https://ec.europa.eu/consumers/odr/", target: "_blank", rel: "noopener noreferrer" },
+        "ec.europa.eu/consumers/odr"),
+      ". Ich bin weder verpflichtet noch bereit, an einem Streitbeilegungsverfahren vor einer "
+      + "Verbraucherschlichtungsstelle teilzunehmen."),
+
+    h2(null, "Haftung für Inhalte und Links"),
+    para(null,
+      "Für eigene Inhalte auf diesen Seiten bin ich nach den allgemeinen Gesetzen verantwortlich. "
+      + "Ich bin jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen "
+      + "oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen."),
+    para(null,
+      "Inhalte, die Nutzerinnen und Nutzer in ihre Planungen einstellen — Texte, Bilder, Nachrichten — sind fremde Inhalte. "
+      + "Für sie ist verantwortlich, wer sie eingestellt hat. Bei Kenntnis von Rechtsverletzungen entferne ich solche Inhalte umgehend."),
+    para(null,
+      "Diese Anwendung verlinkt auf externe Seiten Dritter, etwa Kartendienste. Auf deren Inhalte habe ich keinen Einfluss "
+      + "und übernehme dafür keine Gewähr. Für die Inhalte der verlinkten Seiten ist deren jeweiliger Anbieter verantwortlich."),
+
+    h2(null, "Urheberrecht"),
+    para(null,
+      "Die von mir erstellten Inhalte und Werke unterliegen dem deutschen Urheberrecht. "
+      + "Bilder, die Nutzerinnen und Nutzer hochladen, bleiben bei deren Urhebern."),
+
+    st.paypal_url
+      ? h(Frag, null,
+          h2(null, "Unterstützung"),
+          para(null, st.donate_text || "Diese Anwendung lässt sich freiwillig unterstützen."),
+          div({ style: { marginTop: 12 } }, h(PayPalButton, { site: st })))
+      : null);
+}
+
+function Datenschutz(props) {
+  var st = props.site || {};
+  var addr = siteAddr(st);
+  var wer = st.operator_name || "der Betreiber dieser Anwendung";
+
+  return div({ className: "legal-in" },
+    h1(null, "Datenschutzerklärung"),
+    para({ className: "lab" }, "Stand: " + new Date().toLocaleDateString("de-DE", { month: "long", year: "numeric" })),
+
+    h2(null, "1. Verantwortlicher"),
+    para(null, "Verantwortlich für die Verarbeitung personenbezogener Daten in dieser Anwendung ist:"),
+    h("address", { className: "adr" },
+      st.operator_name ? div(null, bb(null, st.operator_name)) : div({ className: "dim" }, "[Name fehlt]"),
+      addr.map(function (l, i) { return div({ key: i }, l); }),
+      st.email ? div(null, h("a", { href: "mailto:" + st.email }, st.email)) : null,
+      st.phone ? div(null, st.phone) : null),
+
+    h2(null, "2. Was diese Anwendung tut"),
+    para(null,
+      "Der Kontaktbogen dient der Vorbereitung von Fotoshootings. Wer eine Planung anlegt, lädt die andere Seite "
+      + "per Zugangscode dazu ein. Beide Seiten tragen Termine, Ideen, Bilder und Absprachen ein und sehen den Stand der jeweils anderen."),
+
+    h2(null, "3. Welche Daten verarbeitet werden"),
+    h3(null, "Konto"),
+    para(null,
+      "Bei der Registrierung werden E-Mail-Adresse und Passwort gespeichert. Das Passwort wird ausschließlich "
+      + "als kryptografischer Hash abgelegt und ist mir nicht im Klartext zugänglich."),
+    h3(null, "Profil"),
+    para(null,
+      "Freiwillig: Anzeigename, Profilbild, Tätigkeitsbezeichnung, Ort, Telefonnummer, Instagram, Website und "
+      + "ein kurzer Beschreibungstext. Diese Angaben sehen die Personen, mit denen du eine Planung teilst. "
+      + "Deine Telefonnummer wird Gästen ohne Konto ausdrücklich nicht angezeigt."),
+    h3(null, "Planungsinhalte"),
+    para(null,
+      "Titel, Termin, Ort, Konzept, Ideen, Shotlist, Checkliste, Zeitplan, Verfügbarkeiten, Terminvorschläge, "
+      + "hochgeladene Bilder und der Nachrichtenverlauf. Sichtbar ist das jeweils nur für die Beteiligten einer Planung."),
+    h3(null, "Angaben zu Bereichen"),
+    para(null,
+      bb(null, "Besonders schutzwürdig: "),
+      "Im Bereich „Bereiche“ lässt sich festhalten, welche Arten von Aufnahmen für eine Person infrage kommen — "
+      + "darunter Dessous, Boudoir, Teilakt und Akt. Solche Angaben können Rückschlüsse auf das Sexualleben zulassen "
+      + "und gehören damit zu den besonderen Kategorien personenbezogener Daten nach Art. 9 DSGVO. "
+      + "Die Eingabe ist vollständig freiwillig; sie erfolgt nur auf ausdrückliche Handlung und kann jederzeit "
+      + "durch erneutes Antippen derselben Antwort wieder entfernt werden. Rechtsgrundlage ist die ausdrückliche "
+      + "Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die mit dem Eintrag erteilt und mit dem Entfernen widerrufen wird."),
+    h3(null, "Zugang ohne Konto"),
+    para(null,
+      "Wer nur einen Zugangscode hat, braucht kein Konto. Gespeichert wird dann lediglich der selbst gewählte Name, "
+      + "der unter Beiträgen erscheint, sowie die Beiträge selbst."),
+
+    h2(null, "4. Rechtsgrundlagen"),
+    h("ul", null,
+      h("li", null, bb(null, "Art. 6 Abs. 1 lit. b DSGVO"), " — Erfüllung des Nutzungsverhältnisses und vorvertragliche Abstimmung des Shootings."),
+      h("li", null, bb(null, "Art. 6 Abs. 1 lit. f DSGVO"), " — berechtigtes Interesse am sicheren und störungsfreien Betrieb."),
+      h("li", null, bb(null, "Art. 6 Abs. 1 lit. a DSGVO"), " — Einwilligung, etwa bei der Abfrage des Standorts."),
+      h("li", null, bb(null, "Art. 9 Abs. 2 lit. a DSGVO"), " — ausdrückliche Einwilligung für die Angaben unter „Bereiche“.")),
+
+    h2(null, "5. Auftragsverarbeiter und Dienste"),
+    h3(null, "Datenbank und Dateispeicher"),
+    para(null,
+      "Konto, Planungsdaten und hochgeladene Bilder liegen bei Supabase. Der für diese Anwendung genutzte "
+      + "Server steht in der Region Irland innerhalb der Europäischen Union. Es besteht ein Vertrag zur "
+      + "Auftragsverarbeitung nach Art. 28 DSGVO."),
+    st.hosting_provider
+      ? h(Frag, null, h3(null, "Hosting"),
+          para(null, "Die Anwendung wird bereitgestellt über: " + st.hosting_provider
+            + ". Beim Aufruf fallen dort technisch bedingt Zugriffsdaten an, insbesondere die IP-Adresse."))
+      : null,
+    h3(null, "Beim Aufruf geladene Fremdinhalte"),
+    para(null,
+      "Diese Anwendung lädt Programmbibliotheken und Schriften von externen Servern. Dabei wird deine IP-Adresse "
+      + "an den jeweiligen Anbieter übertragen, technisch bedingt und bevor du irgendetwas anklickst:"),
+    h("ul", null,
+      h("li", null, "cdnjs (Cloudflare, USA) — Programmbibliotheken"),
+      h("li", null, "jsDelivr — Programmbibliothek für den Datenbankzugriff"),
+      h("li", null, "Google Fonts (Google Ireland Limited) — Schriftarten"),
+      h("li", null, "OpenStreetMap Foundation — Kartenkacheln im Bereich „Anfahrt“")),
+    h3(null, "Adresssuche"),
+    para(null,
+      "Suchst du im Bereich „Anfahrt“ nach einer Adresse, wird der eingegebene Suchbegriff zusammen mit deiner "
+      + "IP-Adresse an den Dienst Nominatim der OpenStreetMap Foundation übermittelt. Das geschieht ausschließlich "
+      + "auf Knopfdruck, niemals während des Tippens."),
+    h3(null, "Kartendienste"),
+    para(null,
+      "Die Routen-Knöpfe öffnen Google Maps, Apple Karten oder OpenStreetMap in einem neuen Fenster. "
+      + "Eine Datenübermittlung findet erst statt, wenn du einen dieser Knöpfe anklickst."),
+    st.paypal_url
+      ? h(Frag, null, h3(null, "PayPal"),
+          para(null,
+            "Der Unterstützungs-Knopf ist ein reiner Link. Erst wenn du ihn anklickst, wirst du zu PayPal "
+            + "weitergeleitet; dort gelten die Datenschutzbestimmungen von PayPal. Über deine Zahlung erfahre ich "
+            + "nur, was PayPal mir übermittelt — in der Regel Name und Betrag. Innerhalb dieser Anwendung werden "
+            + "keine Zahlungsdaten erhoben oder gespeichert."))
+      : null,
+
+    h2(null, "6. Speicherung im Browser"),
+    para(null,
+      "Diese Anwendung setzt keine Werbe- oder Analyse-Cookies. Im lokalen Speicher deines Browsers werden abgelegt:"),
+    h("ul", null,
+      h("li", null, "der Name, mit dem du in einer Planung auftrittst"),
+      h("li", null, "deine gewählte Darstellung (hell, dunkel, automatisch)"),
+      h("li", null, bb(null, "dein Startpunkt für die Anfahrt")," — diese Angabe verlässt dein Gerät nicht. "
+        + "Sie wird nicht an den Server übertragen und ist für die andere Seite nicht sichtbar."),
+      h("li", null, "die Anmeldesitzung, damit du nicht bei jedem Aufruf neu anmelden musst")),
+    para(null,
+      "Diese Einträge sind für die von dir angeforderten Funktionen erforderlich. Du kannst sie jederzeit "
+      + "über die Einstellungen deines Browsers löschen."),
+
+    h2(null, "7. Speicherdauer"),
+    para(null,
+      "Planungsdaten bleiben gespeichert, bis die verantwortliche Person die Planung löscht — dann werden alle "
+      + "zugehörigen Einträge und Bilder mitgelöscht. Kontodaten bleiben bis zur Löschung des Kontos bestehen. "
+      + "Für die Löschung deines Kontos genügt eine formlose Nachricht an "
+      + (st.email || "den Verantwortlichen") + "."),
+
+    h2(null, "8. Deine Rechte"),
+    para(null, "Dir stehen gegenüber " + wer + " folgende Rechte zu:"),
+    h("ul", null,
+      h("li", null, "Auskunft über die zu dir gespeicherten Daten (Art. 15 DSGVO)"),
+      h("li", null, "Berichtigung unrichtiger Daten (Art. 16 DSGVO)"),
+      h("li", null, "Löschung (Art. 17 DSGVO)"),
+      h("li", null, "Einschränkung der Verarbeitung (Art. 18 DSGVO)"),
+      h("li", null, "Datenübertragbarkeit (Art. 20 DSGVO)"),
+      h("li", null, "Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21 DSGVO)"),
+      h("li", null, "Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO)")),
+    para(null,
+      "Außerdem steht dir ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde zu (Art. 77 DSGVO), "
+      + "in der Regel der Behörde deines Wohnsitzlandes."),
+
+    st.privacy_extra ? h(Frag, null, h2(null, "9. Ergänzende Hinweise"), para({ style: { whiteSpace: "pre-wrap" } }, st.privacy_extra)) : null,
+
+    div({ className: "hint", style: { marginTop: 30 } },
+      "Dieser Text beschreibt, was die Anwendung technisch tut. Er ersetzt keine Rechtsberatung — "
+      + "lass ihn vor dem öffentlichen Betrieb einmal fachlich prüfen."));
+}
+
+function LegalPage(props) {
+  useEffect(function () { window.scrollTo(0, 0); }, [props.page]);
+  return div({ className: "legal" },
+    div({ className: "legal-bar" },
+      btn({ className: "btn btn-sm", onClick: props.onBack }, "‹ Zurück"),
+      div({ className: "sp" }),
+      btn({ className: "btn btn-quiet btn-sm", onClick: function () { props.onPage("impressum"); } }, "Impressum"),
+      btn({ className: "btn btn-quiet btn-sm", onClick: function () { props.onPage("datenschutz"); } }, "Datenschutz")),
+    props.page === "impressum"
+      ? h(Impressum, { site: props.site })
+      : h(Datenschutz, { site: props.site }));
+}
+
+function SiteFoot(props) {
+  return div({ className: "sitefoot" },
+    btn({ onClick: function () { props.onPage("impressum"); } }, "Impressum"),
+    btn({ onClick: function () { props.onPage("datenschutz"); } }, "Datenschutz"),
+    props.site && props.site.paypal_url
+      ? h("a", { href: extUrl(props.site.paypal_url), target: "_blank", rel: "noopener noreferrer" }, "Unterstützen")
+      : null);
+}
+
+/* Eingabemaske für den Betreiber */
+function SiteSheet(props) {
+  var st = props.site || {};
+  var keys = ["operator_name", "operator_addition", "street", "zip", "city", "country",
+              "email", "phone", "vat_id", "register_entry", "authority", "responsible_person",
+              "hosting_provider", "paypal_url", "donate_text", "privacy_extra"];
+  var a = useState(function () {
+    var o = {}; keys.forEach(function (k) { o[k] = st[k] || ""; }); return o;
+  }), f = a[0], setF = a[1];
+  var b = useState(false), busy = b[0], setBusy = b[1];
+  var c = useState(""), err = c[0], setErr = c[1];
+  function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  function save(ev) {
+    ev.preventDefault();
+    setBusy(true); setErr("");
+    var patch = {};
+    keys.forEach(function (k) { patch[k] = f[k].trim() || null; });
+    sb.from("ps_site").update(patch).eq("id", 1).then(function (r) {
+      setBusy(false);
+      if (r.error) { setErr(r.error.message); return; }
+      props.done();
+    });
+  }
+
+  var fehlt = [];
+  if (!f.operator_name.trim()) fehlt.push("Name");
+  if (!f.street.trim()) fehlt.push("Straße");
+  if (!f.zip.trim() || !f.city.trim()) fehlt.push("PLZ und Ort");
+  if (!f.email.trim()) fehlt.push("E-Mail");
+
+  return div({ className: "scrim", onMouseDown: function (ev) { if (ev.target === ev.currentTarget) props.close(); } },
+    frm({ className: "sheetbox", onSubmit: save, style: { width: "min(560px,100%)", maxHeight: "92vh", overflowY: "auto" } },
+      div({ style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line)" } },
+        h3(null, "Rechtliches"),
+        btn({ type: "button", className: "btn btn-quiet btn-sm", onClick: props.close }, "Schließen")),
+      div({ style: { padding: 16, display: "flex", flexDirection: "column", gap: 14 } },
+        para({ className: "muted", style: { fontSize: "var(--fs-md)" } },
+          "Diese Angaben erscheinen im Impressum und in der Datenschutzerklärung. "
+          + "Für ein gewerblich betriebenes Angebot sind Name, ladungsfähige Anschrift und E-Mail Pflicht."),
+        fehlt.length ? div({ className: "gap-warn" }, "Noch offen: " + fehlt.join(", ")) : null,
+
+        span({ className: "lab" }, "Diensteanbieter"),
+        Field({ label: "Vollständiger Name oder Firmierung" },
+          inp({ className: "inp", value: f.operator_name, autoFocus: true, placeholder: "Vor- und Nachname",
+            onChange: function (e) { set("operator_name", e.target.value); } })),
+        Field({ label: "Zusatz (optional)" },
+          inp({ className: "inp", value: f.operator_addition, placeholder: "z. B. Fotografie, Einzelunternehmen",
+            onChange: function (e) { set("operator_addition", e.target.value); } })),
+        div({ className: "g2" },
+          Field({ label: "Straße und Hausnummer" },
+            inp({ className: "inp", value: f.street, onChange: function (e) { set("street", e.target.value); } })),
+          Field({ label: "Land" },
+            inp({ className: "inp", value: f.country, onChange: function (e) { set("country", e.target.value); } }))),
+        div({ className: "g2" },
+          Field({ label: "PLZ" },
+            inp({ className: "inp", value: f.zip, onChange: function (e) { set("zip", e.target.value); } })),
+          Field({ label: "Ort" },
+            inp({ className: "inp", value: f.city, onChange: function (e) { set("city", e.target.value); } }))),
+
+        span({ className: "lab" }, "Kontakt"),
+        div({ className: "g2" },
+          Field({ label: "E-Mail" },
+            inp({ className: "inp", type: "email", value: f.email, onChange: function (e) { set("email", e.target.value); } })),
+          Field({ label: "Telefon" },
+            inp({ className: "inp", value: f.phone, onChange: function (e) { set("phone", e.target.value); } }))),
+
+        span({ className: "lab" }, "Gewerbliche Angaben"),
+        div({ className: "g2" },
+          Field({ label: "USt-IdNr. (falls vorhanden)" },
+            inp({ className: "inp", value: f.vat_id, placeholder: "DE…",
+              onChange: function (e) { set("vat_id", e.target.value); } })),
+          Field({ label: "Registereintrag (falls vorhanden)" },
+            inp({ className: "inp", value: f.register_entry, placeholder: "Amtsgericht, HRB …",
+              onChange: function (e) { set("register_entry", e.target.value); } }))),
+        div({ className: "g2" },
+          Field({ label: "Aufsichtsbehörde (falls einschlägig)" },
+            inp({ className: "inp", value: f.authority, onChange: function (e) { set("authority", e.target.value); } })),
+          Field({ label: "Redaktionell verantwortlich" },
+            inp({ className: "inp", value: f.responsible_person, placeholder: "Name, Anschrift",
+              onChange: function (e) { set("responsible_person", e.target.value); } }))),
+
+        span({ className: "lab" }, "Datenschutz"),
+        Field({ label: "Hosting-Anbieter" },
+          inp({ className: "inp", value: f.hosting_provider, placeholder: "z. B. Netlify, Inc., San Francisco, USA",
+            onChange: function (e) { set("hosting_provider", e.target.value); } })),
+        Field({ label: "Ergänzende Hinweise (optional)" },
+          txa({ className: "inp", rows: 3, value: f.privacy_extra,
+            onChange: function (e) { set("privacy_extra", e.target.value); } })),
+
+        span({ className: "lab" }, "Unterstützung"),
+        Field({ label: "PayPal-Link" },
+          inp({ className: "inp", value: f.paypal_url, placeholder: "paypal.me/deinname",
+            onChange: function (e) { set("paypal_url", e.target.value); } })),
+        Field({ label: "Text über dem Knopf" },
+          inp({ className: "inp", value: f.donate_text,
+            onChange: function (e) { set("donate_text", e.target.value); } })),
+
+        err ? div({ className: "hint bad" }, err) : null,
+        btn({ className: "btn btn-pri btn-wide", disabled: busy },
+          busy ? span({ className: "spin" }) : null, "Speichern"))));
 }
 
 /* ============================================================
@@ -1324,6 +1736,8 @@ function AdminApp(props) {
   var pr = useState(null), profile = pr[0], setProfile = pr[1];
   var po = useState(false), profileOpen = po[0], setProfileOpen = po[1];
   var jo = useState(false), joinOpen = jo[0], setJoinOpen = jo[1];
+  var so = useState(false), siteOpen = so[0], setSiteOpen = so[1];
+  var isSiteOwner = !!(props.site && props.site.owner_uid === uid);
   function pick(id) { setSel(id); setMView("detail"); }
 
   var loadProfile = useCallback(function () {
@@ -1492,6 +1906,10 @@ function AdminApp(props) {
               span({ className: "lab tnum" }, grp[1].length)),
             grp[1].map(function (p) { return h(PlanEntry, { key: p.id, p: p, on: p.id === sel, pick: pick }); }));
         })),
+      div({ className: "rail-legal" },
+        btn({ onClick: function () { props.onLegal("impressum"); } }, "Impressum"),
+        btn({ onClick: function () { props.onLegal("datenschutz"); } }, "Datenschutz"),
+        isSiteOwner ? btn({ onClick: function () { setSiteOpen(true); } }, "Rechtliches pflegen") : null),
       div({ className: "rail-foot" },
         btn({ className: "me-btn", onClick: function () { setProfileOpen(true); }, title: "Profil bearbeiten" },
           Avatar({ url: profile && profile.avatar_url, name: myName, size: 36 }),
@@ -1517,6 +1935,11 @@ function AdminApp(props) {
       profile: profile, userId: uid,
       close: function () { setProfileOpen(false); },
       done: function () { setProfileOpen(false); loadProfile(); props.toast("Profil gespeichert"); }
+    }) : null,
+    siteOpen ? h(SiteSheet, {
+      site: props.site,
+      close: function () { setSiteOpen(false); },
+      done: function () { setSiteOpen(false); props.reloadSite(); props.toast("Angaben gespeichert"); }
     }) : null,
     joinOpen ? h(JoinSheet, {
       close: function () { setJoinOpen(false); },
@@ -3272,7 +3695,8 @@ function ModelApp(props) {
           div({ className: "tb-title" }, h1({ className: "trunc" }, p.title)),
           div({ className: "tb-acts" }, h(ThemeBtn),
             btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen")))),
-      h(LockedView, { title: p.title, host: bundle.host, onReload: reload }));
+      h(LockedView, { title: p.title, host: bundle.host, onReload: reload }),
+      h(SiteFoot, { site: props.site, onPage: props.onLegal }));
   }
 
   var openChecks = bundle.checklist.filter(function (x) { return !x.done && x.assignee !== "fotograf"; }).length;
@@ -3326,19 +3750,8 @@ function ModelApp(props) {
         : tab === "shotlist" ? h(Shotlist, { planning: p, shots: bundle.shots, reload: reload, toast: props.toast })
         : tab === "checkliste" ? h(Checklist, { planning: p, items: bundle.checklist, code: code, reload: reload, toast: props.toast })
         : tab === "zeitplan" ? h(Schedule, { planning: p, rows: bundle.schedule, reload: reload, toast: props.toast })
-        : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })));
-}
-
-function extUrl(v) {
-  var s = String(v || "").trim();
-  if (!s) return null;
-  if (/^https?:\/\//i.test(s)) return s;
-  if (s.charAt(0) === "@") return "https://instagram.com/" + s.slice(1);
-  return "https://" + s;
-}
-function extLabel(v) {
-  var s = String(v || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
-  return s.length > 32 ? s.slice(0, 31) + "…" : s;
+        : h(Chat, { planning: p, comments: bundle.comments, code: code, reload: reload, toast: props.toast, authorName: name })),
+    h(SiteFoot, { site: props.site, onPage: props.onLegal }));
 }
 
 function HostCard(props) {
@@ -3453,7 +3866,16 @@ function App() {
   var c = useState(null), model = c[0], setModel = c[1];
   var d = useState(""), msg = d[0], setMsg = d[1];
   var e = useState(false), recovery = e[0], setRecovery = e[1];
+  var lg = useState(null), legal = lg[0], setLegal = lg[1];
+  var si = useState(null), site = si[0], setSite = si[1];
   var timer = useRef(null);
+
+  /* Impressum und Datenschutz muessen auch ohne Anmeldung lesbar sein */
+  var loadSite = useCallback(function () {
+    return sb.from("ps_site").select("*").eq("id", 1).maybeSingle()
+      .then(function (r) { if (!r.error) setSite(r.data || null); });
+  }, []);
+  useEffect(function () { loadSite(); }, [loadSite]);
 
   var toast = useCallback(function (m) {
     setMsg(m);
@@ -3473,11 +3895,18 @@ function App() {
   function leave() { location.hash = ""; setModel(null); }
 
   var view;
+  if (legal) {
+    return h(Frag, null,
+      h(LegalPage, { page: legal, site: site, onPage: setLegal, onBack: function () { setLegal(null); } }),
+      Toast({ msg: msg }));
+  }
   if (!ready) view = div({ style: { display: "grid", placeItems: "center", minHeight: "100vh" } }, span({ className: "spin" }));
   else if (recovery) view = h(NewPassword, { done: function () { setRecovery(false); toast("Passwort geändert"); } });
-  else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast, onLeave: leave });
-  else if (session) view = h(AdminApp, { session: session, toast: toast });
-  else view = h(Entrance, { onModel: function (code, data) { setModel({ code: code, data: data }); }, toast: toast });
+  else if (model) view = h(ModelApp, { code: model.code, initial: model.data, toast: toast, onLeave: leave,
+                                      site: site, onLegal: setLegal });
+  else if (session) view = h(AdminApp, { session: session, toast: toast, site: site, reloadSite: loadSite, onLegal: setLegal });
+  else view = h(Entrance, { onModel: function (code, data) { setModel({ code: code, data: data }); },
+                            toast: toast, site: site, onLegal: setLegal });
 
   return h(Frag, null, view, Toast({ msg: msg }));
 }
