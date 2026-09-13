@@ -174,6 +174,13 @@ a{color:var(--accent); text-underline-offset:3px}
   padding:1px 5px; border-radius:4px; font-variant-numeric:tabular-nums;
 }
 .tab.on .cnt{background:var(--accent-tint); color:var(--accent)}
+/* Punkt an Reitern, auf denen die andere Seite seit dem letzten Besuch
+   etwas hinterlassen hat. Der Zeitpunkt liegt im Browser, nicht am Konto. */
+.tab .nu{
+  width:7px; height:7px; border-radius:50%; background:var(--accent); flex:0 0 auto;
+  box-shadow:0 0 0 3px var(--accent-tint);
+}
+.tab.fresh{color:var(--ink)}
 
 .content{padding:24px 28px 80px; max-width:1180px}
 @media (max-width:640px){.content{padding:18px 16px 60px}}
@@ -686,6 +693,20 @@ select.inp{appearance:none; padding-right:26px;
   border-radius:var(--r-sm); padding:12px 14px; font-size:var(--fs-md); margin:14px 0;
 }
 
+/* Aktionsleiste über den Inhalten */
+.addbar{display:flex; margin-bottom:2px}
+.addbar .btn{flex:0 0 auto}
+
+/* Aufklappbarer Abschnitt am Fuß einer Karte */
+.more{
+  width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:transparent; border:none; border-top:1px solid var(--line);
+  padding:12px 16px; cursor:pointer; color:var(--ink-2); font-size:var(--fs-md); text-align:left;
+}
+.more:hover{background:var(--sunken); color:var(--ink)}
+.more .chev{transition:transform .15s ease; color:var(--ink-3)}
+.more.open .chev{transform:rotate(90deg)}
+
 /* Sonstiges */
 .spin{display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -895,6 +916,13 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
 
   /* Randlose Karten brauchen keinen zusätzlichen Rahmen um Hinweise */
   .hint{margin-left:0; margin-right:0}
+
+  /* Die Kopfzeile darf wegscrollen — die Reiterleiste nicht.
+     So bleibt die Navigation erreichbar, ohne Höhe zu fressen. */
+  .topbar{position:static}
+  .tabs{position:sticky; top:0; z-index:19; background:var(--bg)}
+  .addbar .btn{flex:1}
+
 }
 
 @media (max-width:380px){
@@ -2016,6 +2044,113 @@ function NewPlanning(props) {
           busy ? span({ className: "spin" }) : null, "Anlegen"))));
 }
 
+/* ---------- Was ist neu? ----------
+   Die häufigste Frage bei der Zusammenarbeit zu zweit ist: Hat die andere
+   Seite etwas beigetragen? Die Zähler an den Reitern nennen Gesamtmengen —
+   die beantworten das nicht. Darum ein Punkt an jedem Reiter, auf dem seit
+   dem letzten Besuch etwas dazugekommen ist.
+
+   Der Zeitpunkt des Besuchs liegt im Browser, nicht in der Datenbank: „neu“
+   heisst also neu für dieses Gerät. Das kostet nichts, verrät der anderen
+   Seite nicht, wann man zuletzt reingeschaut hat — und ist auf dem zweiten
+   Gerät eben wieder neu. Gezählt wird nur, was die andere Seite beigetragen
+   hat; die eigenen Einträge sind nie neu. */
+var TAB_KEYS = ["uebersicht", "termine", "bereiche", "anfahrt", "moodboard",
+                "ideen", "shotlist", "checkliste", "zeitplan", "absprachen"];
+
+function seenMap(pid) {
+  if (!pid) return {};
+  var raw = store.get("ps_seen_" + pid);
+  if (!raw) return null;
+  try { var m = JSON.parse(raw); return (m && typeof m === "object") ? m : null; }
+  catch (e) { return null; }
+}
+function markSeen(pid, key) {
+  if (!pid) return {};
+  var m = seenMap(pid) || {};
+  m[key] = new Date().toISOString();
+  store.set("ps_seen_" + pid, JSON.stringify(m));
+  return m;
+}
+/* Beim allerersten Öffnen gilt alles als gesehen — sonst leuchtet eine
+   frisch angelegte Planung auf ganzer Breite auf. */
+function markAllSeen(pid) {
+  var now = new Date().toISOString(), m = {};
+  if (!pid) return m;
+  TAB_KEYS.forEach(function (k) { m[k] = now; });
+  store.set("ps_seen_" + pid, JSON.stringify(m));
+  return m;
+}
+
+/* Stammt der Eintrag von mir? Tabellen ohne Urheberspalte füllt nur
+   der Gastgeber — für ihn ist dort also nie etwas neu. */
+function mineRow(side, r) {
+  if (r.author_role) return side === "host" ? r.author_role === "admin" : r.author_role === "model";
+  if (r.party) return side === "host" ? r.party === "inhaber" : r.party === "gast";
+  return side === "host";
+}
+function countNew(rows, side, since, fields) {
+  if (!rows || !since) return 0;
+  var n = 0;
+  rows.forEach(function (r) {
+    if (mineRow(side, r)) return;
+    var t = 0;
+    fields.forEach(function (f) { var v = r[f] ? Date.parse(r[f]) : 0; if (v > t) t = v; });
+    if (t > since) n++;
+  });
+  return n;
+}
+
+function freshByTab(seen, side, p, b) {
+  function at(k) { return (seen && seen[k]) ? Date.parse(seen[k]) : 0; }
+  var guest = side === "guest", f = {};
+  /* Den Planungssatz selbst — Konzept, Eckdaten, Location — ändert nur der
+     Gastgeber. Für ihn gibt es hier darum nichts zu melden. */
+  f.uebersicht = (guest && p.updated_at && at("uebersicht")
+                  && Date.parse(p.updated_at) > at("uebersicht")) ? 1 : 0;
+  f.termine = countNew(b.availability, side, at("termine"), ["updated_at", "created_at"])
+    + (guest
+        ? countNew(b.proposals, side, at("termine"), ["created_at"])
+        : (b.proposals || []).filter(function (x) {
+            return x.voted_at && at("termine") && Date.parse(x.voted_at) > at("termine");
+          }).length);
+  f.bereiche = countNew(b.genres, side, at("bereiche"), ["updated_at"]);
+  f.moodboard = countNew(b.images, side, at("moodboard"), ["created_at"]);
+  f.ideen = countNew(b.ideas, side, at("ideen"), ["created_at"]);
+  f.absprachen = countNew(b.comments, side, at("absprachen"), ["created_at"]);
+  /* Shotlist, Checkliste und Zeitplan füllt der Gastgeber — nur der Gast
+     bekommt hier einen Punkt. */
+  f.shotlist = guest ? countNew(b.shots, side, at("shotlist"), ["created_at"]) : 0;
+  f.checkliste = guest ? countNew(b.checklist, side, at("checkliste"), ["created_at"]) : 0;
+  f.zeitplan = guest ? countNew(b.schedule, side, at("zeitplan"), ["created_at"]) : 0;
+  /* Die Anfahrt hängt am Planungssatz und wäre nur eine zweite Meldung
+     derselben Änderung — die steht schon auf der Übersicht. */
+  f.anfahrt = 0;
+  return f;
+}
+
+/* Merkt den Besuch und liefert je Reiter die Zahl der Neuigkeiten.
+   Der Reiter, auf dem man gerade steht, gilt als gelesen. */
+function useFresh(pid, tab, side, p, b) {
+  var s = useState(function () { return seenMap(pid) || markAllSeen(pid); });
+  var seen = s[0], setSeen = s[1];
+  var lastPid = useRef(pid), lastTab = useRef(tab);
+
+  useEffect(function () {
+    if (lastPid.current !== pid) {
+      lastPid.current = pid; lastTab.current = tab;
+      setSeen(seenMap(pid) || markAllSeen(pid));
+      return;
+    }
+    markSeen(pid, tab);
+    if (lastTab.current !== tab) { lastTab.current = tab; setSeen(seenMap(pid) || {}); }
+  });
+
+  var f = b ? freshByTab(seen, side, p, b) : {};
+  f[tab] = 0;
+  return f;
+}
+
 /* ---------- Planungsansicht ---------- */
 /* Eine Leiste für beide Ansichten. Auf dem Handy scrollt sie waagerecht;
    der aktive Reiter wird dabei immer in die Mitte geholt, sonst verschwindet
@@ -2033,10 +2168,17 @@ function TabBar(props) {
   }, [props.active]);
   return div({ className: "tabs", ref: ref },
     props.tabs.map(function (t) {
+      var nu = props.fresh ? (props.fresh[t[0]] || 0) : 0;
       return btn({
-        key: t[0], className: "tab" + (props.active === t[0] ? " on" : ""),
+        key: t[0],
+        className: "tab" + (props.active === t[0] ? " on" : "") + (nu ? " fresh" : ""),
+        title: nu ? (nu === 1 ? "1 neuer Beitrag seit deinem letzten Besuch"
+                              : nu + " neue Beiträge seit deinem letzten Besuch") : null,
         onClick: function () { props.onPick(t[0]); }
-      }, t[1], t[2] ? span({ className: "cnt tnum" }, t[2]) : null);
+      }, t[1],
+        t[2] ? span({ className: "cnt tnum" }, t[2]) : null,
+        nu ? span({ className: "nu", role: "img",
+          "aria-label": nu + " neu seit deinem letzten Besuch" }) : null);
     }));
 }
 
@@ -2076,6 +2218,8 @@ function PlanningView(props) {
     ["zeitplan", "Zeitplan", d ? d.schedule.length : 0, "zeitplan"],
     ["absprachen", "Absprachen", d ? d.comments.length : 0, "absprachen"]
   ].filter(function (t) { return owner || !t[3] || sectionOn(p, t[3]); });
+  var fresh = useFresh(p.id, tab, owner ? "host" : "guest", p, d || {});
+
   /* Gast auf einem inzwischen versteckten Reiter zurückholen */
   useEffect(function () {
     var ok = false;
@@ -2110,7 +2254,7 @@ function PlanningView(props) {
                   else { props.clearSel(); props.reloadList(); props.toast("Planung verlassen"); }
                 });
             } }, "Planung verlassen")))),
-    h(TabBar, { tabs: tabs, active: tab, onPick: setTab }),
+    h(TabBar, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
     div({ className: "content" },
       !d ? Empty({}, "Lade Planungsdaten …")
         : (!owner && !p.is_shared)
@@ -2141,6 +2285,7 @@ function Overview(props) {
   useEffect(function () {
     setShare({ on: !!p.is_shared, sec: p.share_settings || {} });
   }, [p.id, p.is_shared, JSON.stringify(p.share_settings || {})]);
+  var so = useState(false), secOpen = so[0], setSecOpen = so[1];
   function secOn(k) { return share.sec[k] === undefined ? true : !!share.sec[k]; }
   function setMaster(v) {
     var before = share.on;
@@ -2273,24 +2418,14 @@ function Overview(props) {
             busy ? span({ className: "spin" }) : null, "Planung endgültig löschen")))),
 
     div({ className: "cards" },
-      Card({ title: "Freigabe", flush: true,
-        aside: span({ className: "st " + (share.on ? "st-bestaetigt" : "st-idee") }, ii(null), share.on ? "geteilt" : "in Vorbereitung") },
-        div({ className: "rows" },
-          Switch({
-            label: "Planung für Gäste freigeben",
-            hint: share.on
-              ? "Gäste sehen die unten aktivierten Bereiche."
-              : "Gäste sehen nur den Titel und wer die Planung führt. Die Bereiche darunter kannst du schon vorbereiten.",
-            checked: share.on,
-            onChange: setMaster
-          }),
-          SECTIONS.map(function (sc) {
-            return Switch({
-              key: sc[0], label: sc[1], hint: sc[2],
-              checked: secOn(sc[0]),
-              onChange: function (v) { setSection(sc[0], v); }
-            });
-          }))),
+      Card({ title: "Auf einen Blick", aside: btn({ className: "btn btn-quiet btn-sm", onClick: addToCalendar }, "In den Kalender") },
+        dl({ className: "dl" },
+          div(null, dt({ className: "lab" }, "Termin"), dd(null, fmtDate(p.shoot_date))),
+          div(null, dt({ className: "lab" }, "Zeit"), dd(null, p.shoot_time || "—")),
+          div(null, dt({ className: "lab" }, "Ort"), dd(null, p.location || "—")),
+          div(null, dt({ className: "lab" }, "Model"), dd(null, p.model_name || "—")),
+          div(null, dt({ className: "lab" }, "Kontakt"), dd(null, p.model_contact || "—")),
+          div(null, dt({ className: "lab" }, "Bilder"), dd({ className: "tnum" }, d.images.length)))),
 
       Card({ title: "Zugang für Gäste", aside: span({ className: "st " + (p.code_active ? "st-bestaetigt" : "st-verworfen") }, ii(null), p.code_active ? "aktiv" : "gesperrt") },
         div({ className: "access" },
@@ -2302,6 +2437,18 @@ function Overview(props) {
             btn({ onClick: newCode }, "Neu"))),
         para({ className: "muted", style: { fontSize: "var(--fs-sm)", marginTop: 12 } },
           "Wer diesen Code hat, sieht die Planung, steuert Ideen und Referenzbilder bei, trägt Termine ein, hakt Aufgaben ab und stellt Fragen — mit oder ohne eigenes Konto.")),
+
+      Card({ title: "Vorbereitung" },
+        div({ className: "ringwrap" },
+          Ring({ value: readiness }),
+          div(null,
+            div({ className: "big" }, Math.round(readiness * 100) + " %"),
+            para({ className: "dim", style: { fontSize: "var(--fs-sm)" } }, "abgeschlossen"))),
+        hr({ className: "sep" }),
+        div({ className: "col", style: { gap: 14 } },
+          Meter({ label: "Checkliste erledigt", value: checksDone, total: d.checklist.length }),
+          Meter({ label: "Shots bestätigt", value: shotsFix, total: d.shots.length }),
+          Meter({ label: "Ideen aufgenommen", value: d.ideas.filter(function (x) { return x.status !== "idee" && x.status !== "verworfen"; }).length, total: d.ideas.length }))),
 
       Card({ title: "Beteiligte", flush: true, aside: span({ className: "lab tnum" }, (d.members || []).length + 1) },
         div({ className: "rows" },
@@ -2331,26 +2478,32 @@ function Overview(props) {
                   "Noch niemand mit eigenem Konto dabei. Wer den Zugangscode hat, kann ohne Konto mitarbeiten oder ihn im eigenen Konto unter „Beitreten“ eintragen."))
             : null)),
 
-      Card({ title: "Vorbereitung" },
-        div({ className: "ringwrap" },
-          Ring({ value: readiness }),
-          div(null,
-            div({ className: "big" }, Math.round(readiness * 100) + " %"),
-            para({ className: "dim", style: { fontSize: "var(--fs-sm)" } }, "abgeschlossen"))),
-        hr({ className: "sep" }),
-        div({ className: "col", style: { gap: 14 } },
-          Meter({ label: "Checkliste erledigt", value: checksDone, total: d.checklist.length }),
-          Meter({ label: "Shots bestätigt", value: shotsFix, total: d.shots.length }),
-          Meter({ label: "Ideen aufgenommen", value: d.ideas.filter(function (x) { return x.status !== "idee" && x.status !== "verworfen"; }).length, total: d.ideas.length }))),
-
-      Card({ title: "Auf einen Blick", aside: btn({ className: "btn btn-quiet btn-sm", onClick: addToCalendar }, "In den Kalender") },
-        dl({ className: "dl" },
-          div(null, dt({ className: "lab" }, "Termin"), dd(null, fmtDate(p.shoot_date))),
-          div(null, dt({ className: "lab" }, "Zeit"), dd(null, p.shoot_time || "—")),
-          div(null, dt({ className: "lab" }, "Ort"), dd(null, p.location || "—")),
-          div(null, dt({ className: "lab" }, "Model"), dd(null, p.model_name || "—")),
-          div(null, dt({ className: "lab" }, "Kontakt"), dd(null, p.model_contact || "—")),
-          div(null, dt({ className: "lab" }, "Bilder"), dd({ className: "tnum" }, d.images.length))))));
+      Card({ title: "Freigabe", flush: true,
+        aside: span({ className: "st " + (share.on ? "st-bestaetigt" : "st-idee") }, ii(null), share.on ? "geteilt" : "in Vorbereitung") },
+        div({ className: "rows" },
+          Switch({
+            label: "Planung für Gäste freigeben",
+            hint: share.on
+              ? "Gäste sehen die unten aktivierten Bereiche."
+              : "Gäste sehen nur den Titel und wer die Planung führt. Die Bereiche darunter kannst du schon vorbereiten.",
+            checked: share.on,
+            onChange: setMaster
+          }),
+          secOpen
+            ? SECTIONS.map(function (sc) {
+                return Switch({
+                  key: sc[0], label: sc[1], hint: sc[2],
+                  checked: secOn(sc[0]),
+                  onChange: function (v) { setSection(sc[0], v); }
+                });
+              })
+            : null),
+        btn({ className: "more" + (secOpen ? " open" : ""), type: "button",
+          onClick: function () { setSecOpen(!secOpen); } },
+          span(null, secOpen
+            ? "Bereiche ausblenden"
+            : "Bereiche einzeln festlegen · " + SECTIONS.filter(function (sc) { return secOn(sc[0]); }).length + " von " + SECTIONS.length + " sichtbar"),
+          span({ className: "chev" }, "\u203a")))));
 }
 
 /* ---------- Moodboard ---------- */
@@ -2362,6 +2515,7 @@ function Moodboard(props) {
   var d = useState(false), busy = d[0], setBusy = d[1];
   var e = useState("alle"), filter = e[0], setFilter = e[1];
   var lb = useState(-1), lbIdx = lb[0], setLbIdx = lb[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
   var fileRef = useRef(null);
   var code = props.code || p.access_code;
   var folder = p.id; /* Ordner im Speicher = Planungs-ID, überlebt einen Codewechsel */
@@ -2397,7 +2551,7 @@ function Moodboard(props) {
       chain = chain.then(function () { return uploadFile(file, folder); }).then(record);
     });
     chain.then(function () {
-      setBusy(false); setCaption(""); props.reload();
+      setBusy(false); setCaption(""); setAddOpen(false); props.reload();
       props.toast(files.length === 1 ? "Bild hinzugefügt" : files.length + " Bilder hinzugefügt");
       if (fileRef.current) fileRef.current.value = "";
     }, function (err) {
@@ -2411,7 +2565,7 @@ function Moodboard(props) {
     if (!url.trim()) return;
     setBusy(true);
     Promise.resolve(record({ url: url.trim() })).then(function () {
-      setBusy(false); setUrl(""); setCaption(""); props.reload(); props.toast("Bild verlinkt");
+      setBusy(false); setUrl(""); setCaption(""); setAddOpen(false); props.reload(); props.toast("Bild verlinkt");
     }, function (err) { setBusy(false); props.toast("Fehler: " + (err.message || err)); });
   }
 
@@ -2422,7 +2576,11 @@ function Moodboard(props) {
   }
 
   return div({ className: "cards" },
-    Card({ title: "Referenz hinzufügen", aside: span({ className: "lab" }, "JPG · PNG · WEBP · bis 10 MB") },
+    !addOpen
+      ? div({ className: "addbar" },
+          btn({ className: "btn btn-pri", onClick: function () { setAddOpen(true); } }, "+ Bild hinzufügen"))
+      : Card({ title: "Referenz hinzufügen",
+          aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       div({ className: "g2" },
         Field({ label: "Kategorie" },
           sel({ className: "inp", value: cat, onChange: function (ev) { setCat(ev.target.value); } },
@@ -2483,6 +2641,7 @@ function Ideas(props) {
   var c = useState("allgemein"), cat = c[0], setCat = c[1];
   var d = useState(false), busy = d[0], setBusy = d[1];
   var e = useState("alle"), view = e[0], setView = e[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
 
   function add(ev) {
     ev.preventDefault();
@@ -2504,7 +2663,7 @@ function Ideas(props) {
     Promise.resolve(q).then(function (r) {
       setBusy(false);
       if (r && r.error) { props.toast("Fehler: " + r.error.message); return; }
-      setTitle(""); setDesc(""); props.reload(); props.toast("Idee gespeichert");
+      setTitle(""); setDesc(""); setAddOpen(false); props.reload(); props.toast("Idee gespeichert");
     });
   }
   function setStatus(idea, st) { sb.from("ps_ideas").update({ status: st }).eq("id", idea.id).then(props.reload); }
@@ -2525,7 +2684,11 @@ function Ideas(props) {
   });
 
   return div({ className: "cards" },
-    Card({ title: "Idee festhalten" },
+    !addOpen
+      ? div({ className: "addbar" },
+          btn({ className: "btn btn-pri", onClick: function () { setAddOpen(true); } }, "+ Idee festhalten"))
+      : Card({ title: "Idee festhalten",
+          aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       frm({ className: "col", onSubmit: add },
         div({ className: "g2" },
           Field({ label: "Titel" },
@@ -2573,6 +2736,7 @@ function Shotlist(props) {
   var a = useState({ title: "", description: "", outfit: "", location: "", reference_url: "" }), f = a[0], setF = a[1];
   var b = useState(false), busy = b[0], setBusy = b[1];
   var lb = useState(-1), lbIdx = lb[0], setLbIdx = lb[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
   function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
 
   /* Nur Einstellungen mit Referenzbild — sonst blättert man ins Leere */
@@ -2590,7 +2754,7 @@ function Shotlist(props) {
       setBusy(false);
       if (r.error) { props.toast("Fehler: " + r.error.message); return; }
       setF({ title: "", description: "", outfit: "", location: "", reference_url: "" });
-      props.reload();
+      setAddOpen(false); props.reload();
     });
   }
   function setStatus(s, st) { sb.from("ps_shots").update({ status: st }).eq("id", s.id).then(props.reload); }
@@ -2607,7 +2771,12 @@ function Shotlist(props) {
   }
 
   return div({ className: "cards" },
-    admin ? Card({ title: "Einstellung ergänzen", aside: span({ className: "lab" }, "Reihenfolge = Ablauf am Set") },
+    (admin && !addOpen)
+      ? div({ className: "addbar" },
+          btn({ className: "btn btn-pri", onClick: function () { setAddOpen(true); } }, "+ Einstellung ergänzen"))
+      : null,
+    (admin && addOpen) ? Card({ title: "Einstellung ergänzen",
+      aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       frm({ className: "col", onSubmit: add },
         div({ className: "g2" },
           Field({ label: "Titel" }, inp({ className: "inp", value: f.title, placeholder: "Halbnah, Blick über die Schulter", onChange: function (ev) { set("title", ev.target.value); } })),
@@ -2666,6 +2835,7 @@ function Checklist(props) {
   var a = useState(""), title = a[0], setTitle = a[1];
   var b = useState("beide"), who = b[0], setWho = b[1];
   var c = useState("allgemein"), cat = c[0], setCat = c[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
 
   function add(ev) {
     ev.preventDefault();
@@ -2674,7 +2844,7 @@ function Checklist(props) {
       planning_id: p.id, title: title.trim(), assignee: who, category: cat, position: items.length
     }).then(function (r) {
       if (r.error) { props.toast("Fehler: " + r.error.message); return; }
-      setTitle(""); props.reload();
+      setTitle(""); setAddOpen(false); props.reload();
     });
   }
   function toggle(it) {
@@ -2692,7 +2862,12 @@ function Checklist(props) {
   function remove(it) { sb.from("ps_checklist").delete().eq("id", it.id).then(props.reload); }
 
   return div({ className: "cards" },
-    admin ? Card({ title: "Punkt hinzufügen" },
+    (admin && !addOpen)
+      ? div({ className: "addbar" },
+          btn({ className: "btn btn-pri", onClick: function () { setAddOpen(true); } }, "+ Punkt hinzufügen"))
+      : null,
+    (admin && addOpen) ? Card({ title: "Punkt hinzufügen",
+      aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       frm({ className: "row", onSubmit: add, style: { alignItems: "flex-end" } },
         div({ style: { flex: 1, minWidth: 200 } },
           Field({ label: "Was ist zu tun" },
@@ -2732,6 +2907,7 @@ function Checklist(props) {
 function Schedule(props) {
   var admin = !!props.admin, p = props.planning, rows = props.rows;
   var a = useState({ time_from: "", time_to: "", title: "", notes: "" }), f = a[0], setF = a[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
   function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
 
   function add(ev) {
@@ -2742,13 +2918,18 @@ function Schedule(props) {
       title: f.title.trim(), notes: f.notes || null, position: rows.length
     }).then(function (r) {
       if (r.error) { props.toast("Fehler: " + r.error.message); return; }
-      setF({ time_from: "", time_to: "", title: "", notes: "" }); props.reload();
+      setF({ time_from: "", time_to: "", title: "", notes: "" }); setAddOpen(false); props.reload();
     });
   }
   function remove(r) { sb.from("ps_schedule").delete().eq("id", r.id).then(props.reload); }
 
   return div({ className: "cards" },
-    admin ? Card({ title: "Programmpunkt" },
+    (admin && !addOpen)
+      ? div({ className: "addbar" },
+          btn({ className: "btn btn-pri", onClick: function () { setAddOpen(true); } }, "+ Programmpunkt"))
+      : null,
+    (admin && addOpen) ? Card({ title: "Programmpunkt",
+      aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       frm({ className: "col", onSubmit: add },
         div({ className: "row", style: { alignItems: "flex-end" } },
           Field({ label: "Von" }, inp({ className: "inp", style: { width: 116 }, type: "time", value: f.time_from, onChange: function (ev) { set("time_from", ev.target.value); } })),
@@ -3034,6 +3215,7 @@ function MapView(props) {
   var s1 = useState(null), startHits = s1[0], setStartHits = s1[1];
   var s2 = useState(false), startBusy = s2[0], setStartBusy = s2[1];
   var d = useState(""), err = d[0], setErr = d[1];
+  var lo = useState(false), locOpen = lo[0], setLocOpen = lo[1];
   var mapRef = useRef(null), boxRef = useRef(null), layersRef = useRef([]);
 
   /* Karte aufbauen und bei Änderungen neu bestücken */
@@ -3084,6 +3266,7 @@ function MapView(props) {
     sb.from("ps_plannings").update(patch).eq("id", p.id).then(function (r) {
       setLocBusy(false);
       if (r.error) { setErr(r.error.message); return; }
+      setLocOpen(false);
       props.reloadList && props.reloadList(); props.reload();
       props.toast("Location gesetzt");
     });
@@ -3161,10 +3344,15 @@ function MapView(props) {
     : [];
 
   return div({ className: "cards" },
-    admin ? Card({
+    (admin && hasTarget && !locOpen)
+      ? div({ className: "addbar" },
+          btn({ className: "btn", onClick: function () { setLocOpen(true); } }, "Location ändern"))
+      : null,
+    (admin && (locOpen || !hasTarget)) ? Card({
       title: "Location festlegen",
-      aside: hasTarget ? span({ className: "st st-bestaetigt" }, ii(null), "gesetzt")
-                       : span({ className: "st st-idee" }, ii(null), "offen")
+      aside: hasTarget
+        ? btn({ className: "btn btn-quiet btn-sm", onClick: function () { setLocOpen(false); } }, "Schließen")
+        : span({ className: "st st-idee" }, ii(null), "offen")
     },
       para({ className: "muted", style: { fontSize: "var(--fs-md)", lineHeight: 1.6 } },
         "Tipp die Adresse ein und such sie — oder füge einen Link aus Google Maps oder OpenStreetMap ein, dann lese ich die Koordinaten direkt daraus. Reine Koordinaten wie „53.5413, 9.9695“ gehen auch."),
@@ -3252,6 +3440,7 @@ function Genres(props) {
   var otherName = admin ? (props.guestName || GUEST_FALLBACK) : (props.hostName || HOST_FALLBACK);
   var a = useState({}), notes = a[0], setNotes = a[1];
   var b = useState(""), busyKey = b[0], setBusy = b[1];
+  var hp = useState(false), helpOpen = hp[0], setHelpOpen = hp[1];
 
   var by = {};
   rows.forEach(function (r) {
@@ -3309,15 +3498,21 @@ function Genres(props) {
   });
 
   return div({ className: "cards" },
-    Card({ title: "So funktioniert das" },
-      para({ style: { fontSize: "var(--fs-md)", lineHeight: 1.6 } },
-        "Jede Seite trägt für sich ein, was für sie infrage kommt. Beide sehen beide Spalten. " +
-        "„Nach Absprache“ heißt: grundsätzlich denkbar, aber es gibt Bedingungen — schreib sie in die Notiz. " +
-        "Ein zweiter Klick auf dieselbe Antwort nimmt sie wieder zurück."),
-      div({ className: "row", style: { marginTop: 12, gap: 8 } },
+    Card({ title: "Stand", flush: true },
+      div({ className: "row", style: { gap: 8, padding: "14px 16px" } },
         span({ className: "st st-bestaetigt" }, ii(null), both + " × beide ja"),
         clash ? span({ className: "st st-verworfen" }, ii(null), clash + " × eine Seite nein") : null,
-        open ? span({ className: "st st-idee" }, ii(null), open + " offen") : null)),
+        open ? span({ className: "st st-idee" }, ii(null), open + " offen") : null),
+      btn({ className: "more" + (helpOpen ? " open" : ""), type: "button",
+        onClick: function () { setHelpOpen(!helpOpen); } },
+        span(null, "So funktioniert das"), span({ className: "chev" }, "›")),
+      helpOpen
+        ? div({ style: { padding: "0 16px 14px" } },
+            para({ style: { fontSize: "var(--fs-md)", lineHeight: 1.6 } },
+              "Jede Seite trägt für sich ein, was für sie infrage kommt. Beide sehen beide Spalten. " +
+              "„Nach Absprache“ heißt: grundsätzlich denkbar, aber es gibt Bedingungen — schreib sie in die Notiz. " +
+              "Ein zweiter Klick auf dieselbe Antwort nimmt sie wieder zurück."))
+        : null),
 
     GENRE_GROUPS.map(function (grp) {
       return Card({ key: grp[0], title: grp[0], flush: true },
@@ -3410,6 +3605,7 @@ function Scheduling(props) {
   var c = useState({ state: "ja", from: "17:00", to: "20:00", note: "" }), f = c[0], setF = c[1];
   var d = useState(false), busy = d[0], setBusy = d[1];
   var e2 = useState({ cal_day: "", time_from: "17:00", time_to: "19:00", note: "" }), np = e2[0], setNp = e2[1];
+  var ao = useState(false), addOpen = ao[0], setAddOpen = ao[1];
   var lastWin = useRef({ from: "17:00", to: "20:00" });
   function setForm(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
   function setNew(k, v) { setNp(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
@@ -3489,7 +3685,7 @@ function Scheduling(props) {
       time_to: np.time_to, note: np.note || null
     }).then(function (r) {
       if (r.error) props.toast("Fehler: " + r.error.message);
-      else { setNp({ cal_day: "", time_from: "17:00", time_to: "19:00", note: "" }); props.reload(); props.toast("Vorschlag angelegt"); }
+      else { setNp({ cal_day: "", time_from: "17:00", time_to: "19:00", note: "" }); setAddOpen(false); props.reload(); props.toast("Vorschlag angelegt"); }
     });
   }
   function accept(v) {
@@ -3632,7 +3828,12 @@ function Scheduling(props) {
             }))),
 
     /* ---------- Vorschläge ---------- */
-    admin ? Card({ title: "Vorschlag von Hand anlegen" },
+    (admin && !addOpen)
+      ? div({ className: "addbar" },
+          btn({ className: "btn", onClick: function () { setAddOpen(true); } }, "+ Vorschlag von Hand anlegen"))
+      : null,
+    (admin && addOpen) ? Card({ title: "Vorschlag von Hand anlegen",
+      aside: btn({ className: "btn btn-quiet btn-sm", onClick: function () { setAddOpen(false); } }, "Schließen") },
       frm({ className: "row", onSubmit: addProposal, style: { alignItems: "flex-end" } },
         Field({ label: "Tag" }, inp({ className: "inp", type: "date", value: np.cal_day,
           onChange: function (ev) { setNew("cal_day", ev.target.value); } })),
@@ -3707,6 +3908,8 @@ function ModelApp(props) {
   }, [reload]);
 
   var p = bundle.planning;
+  /* Muss vor den frühen Rückgaben stehen — Hooks laufen in jeder Runde. */
+  var fresh = useFresh(p && p.id, tab, "guest", p || {}, bundle);
 
   if (!named) {
     return div({ className: "entrance", style: { gridTemplateColumns: "1fr" } },
@@ -3775,7 +3978,7 @@ function ModelApp(props) {
           Status({ value: p.status }),
           h(ThemeBtn),
           btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen")))),
-    h(TabBar, { tabs: tabs, active: tab, onPick: setTab }),
+    h(TabBar, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
     div({ className: "content" },
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
         : tab === "termine" ? h(Scheduling, { hostName: hostName, guestName: guestName, planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
