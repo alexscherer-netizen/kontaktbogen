@@ -7,9 +7,9 @@
 </head>
 <body>
 <title>Kontaktbogen</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<!-- Schriften liegen im Repository. Beim Aufruf wird kein fremder Server
+     kontaktiert: kein Google, kein CDN. Erzeugt von dateien-holen.html. -->
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* ============================================================
    Tokens
@@ -174,6 +174,26 @@ a{color:var(--accent); text-underline-offset:3px}
   padding:1px 5px; border-radius:4px; font-variant-numeric:tabular-nums;
 }
 .tab.on .cnt{background:var(--accent-tint); color:var(--accent)}
+
+/* Zweite Ebene: die Abschnitte innerhalb einer Gruppe. Bewusst anders
+   geformt als die Reiter darüber — sonst weiss man nicht, welche Ebene
+   man gerade umschaltet. */
+.nav{background:var(--bg)}
+.subtabs{
+  display:flex; gap:6px; padding:8px 28px; background:var(--bg);
+  border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none;
+}
+.subtabs::-webkit-scrollbar{display:none}
+.subtab{
+  background:var(--sunken); border:1px solid transparent; color:var(--ink-2); cursor:pointer;
+  padding:5px 12px; border-radius:100px; font-size:var(--fs-sm); font-weight:500;
+  white-space:nowrap; display:flex; align-items:center; gap:6px; flex:none;
+}
+.subtab:hover{color:var(--ink)}
+.subtab.on{background:var(--accent-tint); border-color:var(--accent-tint); color:var(--accent)}
+.subtab .cnt{font-family:"DM Mono",monospace; font-size:var(--fs-xs); font-variant-numeric:tabular-nums; color:var(--ink-3)}
+.subtab.on .cnt{color:var(--accent)}
+.subtab .nu{width:6px; height:6px; border-radius:50%; background:var(--accent); flex:none}
 /* Punkt an Reitern, auf denen die andere Seite seit dem letzten Besuch
    etwas hinterlassen hat. Der Zeitpunkt liegt im Browser, nicht am Konto. */
 .tab .nu{
@@ -365,6 +385,8 @@ select.inp{appearance:none; padding-right:26px;
 .bubble.self{align-self:flex-end; align-items:flex-end}
 .bubble.self .txt{background:var(--accent-tint); border-color:transparent; border-radius:9px 2px 9px 9px}
 .composer{border-top:1px solid var(--line); padding:12px 16px; display:flex; gap:10px; align-items:flex-end}
+.composer textarea.inp{flex:1; min-height:58px}
+.composer .kb{font-size:var(--fs-xs); color:var(--ink-3); align-self:center}
 
 /* ============================================================
    Anmeldung
@@ -707,6 +729,27 @@ select.inp{appearance:none; padding-right:26px;
 .more .chev{transition:transform .15s ease; color:var(--ink-3)}
 .more.open .chev{transform:rotate(90deg)}
 
+/* Die Karte wird erst auf Zuruf geholt */
+.mapask{
+  display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+  padding:22px 16px; background:var(--sunken); border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line); font-size:var(--fs-md); color:var(--ink-2); line-height:1.6;
+}
+.mapask p{max-width:56ch}
+.mapask .lab{text-transform:none; letter-spacing:0}
+
+/* Auskunft und Löschung — bewusst am Fuss des Profils, nicht neben
+   dem Speichern-Knopf. */
+.rights{margin-top:4px}
+/* Warnung, aber lesbar: roter Rand, normale Schrift. Ein ganzer Absatz
+   in Signalfarbe liest sich nicht, er schreit nur. */
+.dangerbox{
+  font-size:var(--fs-md); color:var(--ink-2); background:var(--crit-tint);
+  border:1px solid var(--line); border-left:2px solid var(--crit);
+  padding:12px 14px; border-radius:0 var(--r-sm) var(--r-sm) 0;
+}
+.dangerbox b{color:var(--crit)}
+
 /* Sonstiges */
 .spin{display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -770,7 +813,8 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
   .tb-acts{order:2; flex:1 1 100%; justify-content:space-between; margin-top:1px}
   .tb-acts .btn{min-height:32px; padding:6px 11px}
 
-  .tabs{padding:0 14px; gap:15px; scrollbar-width:none}
+  .subtabs{padding:7px 14px; gap:5px}
+  .tabs{padding:0 14px; gap:12px; scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
   .tab{padding:11px 0 10px; font-size:var(--fs-md)}
 
@@ -827,8 +871,12 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
 
   .thread{padding:14px; max-height:none; gap:12px}
   .bubble{max-width:92%}
-  .composer{padding:10px 14px; gap:8px}
-  .composer .btn{align-self:stretch}
+  /* Auf dem Handy steht das Schreibfeld allein in seiner Zeile — neben dem
+     Sendeknopf blieben davon keine 280px, und zwei Zeilen Text passen da
+     nicht hinein. */
+  .composer{padding:10px 14px; gap:9px; flex-wrap:wrap}
+  .composer textarea.inp{flex:1 1 100%; min-height:88px}
+  .composer .btn{flex:1 1 100%; align-self:auto}
 
   /* Dialog wird zum Bottom Sheet. */
   .scrim{align-items:end; padding:0}
@@ -895,7 +943,7 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
   .mapnote{padding:0 var(--gut) 14px}
   .tl{padding:4px var(--gut) 10px}
   .thread{padding:var(--gut)}
-  .composer{padding:12px var(--gut)}
+  .composer{padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom))}
   .cal-head{padding:12px var(--gut)}
   .cal-dow{padding:8px var(--gut) 2px; gap:3px}
   .cal-grid{padding:2px var(--gut) 14px; gap:3px}
@@ -905,9 +953,10 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
 
   /* Reiterleiste: gleicher Rand, klarer Hinweis aufs Weiterscrollen */
   .tabs{
-    padding:0 var(--gut); gap:16px; scroll-snap-type:x proximity;
+    padding:0 var(--gut); gap:12px; scroll-snap-type:x proximity;
     scroll-padding-inline:var(--gut); scrollbar-width:none;
   }
+  .subtabs{padding:7px var(--gut)}
   .tabs::-webkit-scrollbar{display:none}
   .tab{scroll-snap-align:center; padding:11px 0 10px}
 
@@ -923,22 +972,22 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
   /* Die Kopfzeile darf wegscrollen — die Reiterleiste nicht.
      So bleibt die Navigation erreichbar, ohne Höhe zu fressen. */
   .topbar{position:static}
-  .tabs{position:sticky; top:0; z-index:19; background:var(--bg)}
+  .nav{position:sticky; top:0; z-index:19; background:var(--bg)}
   .addbar .btn{flex:0 0 auto}
 
 }
 
 @media (max-width:380px){
   :root{--gut:12px}
-  .tabs{gap:14px}
+  .tabs{gap:10px}
 }
 </style>
 
 <div id="root"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="lib/react.js"></script>
+<script src="lib/react-dom.js"></script>
+<script src="lib/supabase.js"></script>
 
 <script>
 "use strict";
@@ -1538,19 +1587,28 @@ function Datenschutz() {
       : null,
     h3(null, "Beim Aufruf geladene Fremdinhalte"),
     para(null,
-      "Diese Anwendung lädt Programmbibliotheken und Schriften von externen Servern. Dabei wird deine IP-Adresse "
-      + "an den jeweiligen Anbieter übertragen, technisch bedingt und bevor du irgendetwas anklickst:"),
+      bb(null, "Keine. "),
+      "Schriften und Programmbibliotheken werden vom selben Server ausgeliefert wie die Anwendung selbst. "
+      + "Beim Aufruf dieser Seite wird kein weiterer Anbieter kontaktiert und keine IP-Adresse an Dritte "
+      + "übertragen — insbesondere nicht an Google Fonts, cdnjs oder jsDelivr."),
+    para(null,
+      "Verbindungen zu anderen Anbietern entstehen erst durch eine eigene Handlung von dir:"),
     h("ul", null,
-      h("li", null, "cdnjs (Cloudflare, USA) — Programmbibliotheken"),
-      h("li", null, "jsDelivr — Programmbibliothek für den Datenbankzugriff"),
-      h("li", null, "Google Fonts (Google Ireland Limited) — Schriftarten"),
-      h("li", null, "OpenStreetMap Foundation — Kartenkacheln im Bereich „Anfahrt“")),
+      h("li", null, bb(null, "Supabase"), " — sobald du dich anmeldest oder eine Planung öffnest (Server in Irland, EU)"),
+      h("li", null, bb(null, "OpenStreetMap Foundation"), " — Kartenkacheln, erst nach einem Klick auf „Karte laden“"),
+      h("li", null, bb(null, "Nominatim"), " — Adresssuche, erst auf Knopfdruck"),
+      h("li", null, bb(null, "Karten- und Zahlungsdienste"), " — erst, wenn du einen Routen- oder Unterstützungs-Knopf anklickst")),
     h3(null, "Adresssuche"),
     para(null,
       "Suchst du im Bereich „Anfahrt“ nach einer Adresse, wird der eingegebene Suchbegriff zusammen mit deiner "
       + "IP-Adresse an den Dienst Nominatim der OpenStreetMap Foundation übermittelt. Das geschieht ausschließlich "
       + "auf Knopfdruck, niemals während des Tippens."),
     h3(null, "Kartendienste"),
+    para(null,
+      "Die Karte im Bereich „Anfahrt“ lädt nichts von selbst. Erst wenn du dort auf „Karte laden“ tippst, "
+      + "werden Kartenkacheln von der OpenStreetMap Foundation geholt und deine IP-Adresse dorthin übertragen. "
+      + "Diese Entscheidung wird in deinem Browser vermerkt und gilt auf diesem Gerät weiter; sie lässt sich "
+      + "durch Leeren des lokalen Speichers zurücknehmen."),
     para(null,
       "Die Routen-Knöpfe öffnen Google Maps, Apple Karten oder OpenStreetMap in einem neuen Fenster. "
       + "Eine Datenübermittlung findet erst statt, wenn du einen dieser Knöpfe anklickst."),
@@ -1569,6 +1627,7 @@ function Datenschutz() {
     h("ul", null,
       h("li", null, "der Name, mit dem du in einer Planung auftrittst"),
       h("li", null, "deine gewählte Darstellung (hell, dunkel, automatisch)"),
+      h("li", null, "ob du dem Laden der Karte zugestimmt hast"),
       h("li", null, bb(null, "dein Startpunkt für die Anfahrt")," — diese Angabe verlässt dein Gerät nicht. "
         + "Sie wird nicht an den Server übertragen und ist für die andere Seite nicht sichtbar."),
       h("li", null, "die Anmeldesitzung, damit du nicht bei jedem Aufruf neu anmelden musst")),
@@ -1580,17 +1639,27 @@ function Datenschutz() {
     para(null,
       "Planungsdaten bleiben gespeichert, bis die verantwortliche Person die Planung löscht — dann werden alle "
       + "zugehörigen Einträge und Bilder mitgelöscht. Kontodaten bleiben bis zur Löschung des Kontos bestehen. "
-      + "Für die Löschung deines Kontos genügt eine formlose Nachricht an "
-      + (st.email || "den Verantwortlichen") + "."),
+      + "Dein Konto kannst du selbst löschen: im eigenen Profil unter „Meine Daten“. Dabei verschwinden Konto, "
+      + "Profil und alle Planungen, die dir gehören, samt Bildern und allen Einträgen. Beiträge, die du in "
+      + "Planungen anderer hinterlassen hast, bleiben dort als Inhalt bestehen, werden aber von deinem Namen "
+      + "und deinem Konto gelöst — die andere Seite behält ihre Planung, deine Person ist daraus nicht mehr "
+      + "erkennbar. Eine formlose Nachricht an " + (st.email || "den Verantwortlichen") + " geht selbstverständlich auch."),
 
     h2(null, "8. Deine Rechte"),
+    div({ className: "hint", style: { marginBottom: 14 } },
+      bb(null, "Zwei davon kannst du sofort selbst ausüben: "),
+      "Im eigenen Profil findest du unter „Meine Daten“ einen Knopf, der alles herunterlädt, "
+      + "was zu deinem Konto gespeichert ist (Art. 15 und Art. 20 DSGVO), und einen, der dein "
+      + "Konto löscht (Art. 17 DSGVO). Beides wirkt sofort, ohne Anfrage und ohne Wartezeit."),
     para(null, "Dir stehen gegenüber " + wer + " folgende Rechte zu:"),
     h("ul", null,
-      h("li", null, "Auskunft über die zu dir gespeicherten Daten (Art. 15 DSGVO)"),
+      h("li", null, "Auskunft über die zu dir gespeicherten Daten (Art. 15 DSGVO) — ",
+        bb(null, "im Profil sofort als Datei abrufbar")),
       h("li", null, "Berichtigung unrichtiger Daten (Art. 16 DSGVO)"),
-      h("li", null, "Löschung (Art. 17 DSGVO)"),
+      h("li", null, "Löschung (Art. 17 DSGVO) — ", bb(null, "im Profil selbst ausführbar")),
       h("li", null, "Einschränkung der Verarbeitung (Art. 18 DSGVO)"),
-      h("li", null, "Datenübertragbarkeit (Art. 20 DSGVO)"),
+      h("li", null, "Datenübertragbarkeit (Art. 20 DSGVO) — der Download ist eine JSON-Datei "
+        + "in einem gängigen, maschinenlesbaren Format"),
       h("li", null, "Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21 DSGVO)"),
       h("li", null, "Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO)")),
     para(null,
@@ -1649,8 +1718,65 @@ function ProfileSheet(props) {
   var c = useState(pf.avatar_path || ""), avatarPath = c[0], setAvatarPath = c[1];
   var d = useState(false), busy = d[0], setBusy = d[1];
   var e2 = useState(""), err = e2[0], setErr = e2[1];
+  var dz = useState(false), dangerOpen = dz[0], setDangerOpen = dz[1];
+  var dw = useState(""), confirmWord = dw[0], setConfirmWord = dw[1];
+  var dl = useState(false), working = dl[0], setWorking = dl[1];
   var fileRef = useRef(null);
   function set(k, v) { setF(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
+
+  /* Art. 15 DSGVO: alles, was zu diesem Konto gehört, als eine Datei.
+     Die Datenbank stellt den Satz zusammen — hier wird er nur gespeichert. */
+  function exportAll() {
+    setWorking(true); setErr("");
+    sb.rpc("ps_export_me").then(function (r) {
+      setWorking(false);
+      if (r.error) { setErr("Export fehlgeschlagen: " + r.error.message); return; }
+      var stamp = new Date().toISOString().slice(0, 10);
+      var ok = downloadText("kontaktbogen-meine-daten-" + stamp + ".json",
+        "application/json;charset=utf-8", JSON.stringify(r.data, null, 2));
+      if (!ok) setErr("Der Browser hat den Download blockiert.");
+    }, function (e) { setWorking(false); setErr("Export fehlgeschlagen: " + (e.message || e)); });
+  }
+
+  /* Art. 17 DSGVO. Die Dateien im Speicher zuerst — für die ist die
+     Datenbank nicht zuständig, sie blieben sonst als Karteileichen liegen. */
+  function deleteAccount() {
+    if (confirmWord.trim().toUpperCase() !== "LÖSCHEN") {
+      setErr("Bitte tipp LÖSCHEN in das Feld, dann wird es ausgeführt."); return;
+    }
+    if (!confirm("Konto und alle eigenen Planungen endgültig löschen?\n\n"
+      + "Das lässt sich nicht rückgängig machen. Beiträge in Planungen anderer "
+      + "bleiben als Inhalt stehen, verlieren aber deinen Namen.")) return;
+    setWorking(true); setErr("");
+
+    sb.from("ps_plannings").select("id,access_code").eq("owner_id", props.userId)
+      .then(function (r) {
+        var mine = r.data || [];
+        return Promise.all(mine.map(function (pl) {
+          return listPlanningFiles(pl).then(function (paths) {
+            return paths.length ? sb.storage.from(BUCKET).remove(paths) : null;
+          });
+        }));
+      })
+      .then(function () {
+        return sb.storage.from("profiles").list(props.userId, { limit: 1000 }).then(function (r) {
+          var paths = (r.data || []).map(function (o) { return props.userId + "/" + o.name; });
+          return paths.length ? sb.storage.from("profiles").remove(paths) : null;
+        }, function () { return null; });
+      })
+      .then(function () { return sb.rpc("ps_delete_me"); })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return sb.auth.signOut();
+      })
+      .then(function () {
+        alert("Dein Konto wurde gelöscht. Danke, dass du den Kontaktbogen benutzt hast.");
+        location.reload();
+      }, function (e) {
+        setWorking(false);
+        setErr("Löschen fehlgeschlagen: " + (e.message || e) + " — es wurde nichts entfernt, was nicht schon weg war.");
+      });
+  }
 
   function pickAvatar(list) {
     if (!list || !list.length) return;
@@ -1730,7 +1856,40 @@ function ProfileSheet(props) {
             onChange: function (ev) { set("bio", ev.target.value); } })),
         err ? div({ className: "hint bad" }, err) : null,
         btn({ className: "btn btn-pri btn-wide", disabled: busy },
-          busy ? span({ className: "spin" }) : null, first ? "Los geht's" : "Profil speichern"))));
+          busy ? span({ className: "spin" }) : null, first ? "Los geht's" : "Profil speichern"),
+
+        /* Was die Datenschutzerklärung zusagt, muss die App auch können. */
+        first ? null : div({ className: "rights" },
+          hr({ className: "sep" }),
+          span({ className: "lab" }, "Meine Daten"),
+          para({ className: "muted", style: { fontSize: "var(--fs-sm)", lineHeight: 1.6, marginTop: 6 } },
+            "Du kannst jederzeit alles herunterladen, was hier zu dir gespeichert ist, "
+            + "und dein Konto selbst löschen — dafür musst du niemanden fragen."),
+          div({ className: "row", style: { marginTop: 10 } },
+            btn({ type: "button", className: "btn", disabled: working, onClick: exportAll },
+              working ? span({ className: "spin" }) : null, "Alle meine Daten herunterladen"),
+            btn({ type: "button", className: "btn btn-quiet btn-sm btn-danger",
+              onClick: function () { setDangerOpen(!dangerOpen); setConfirmWord(""); setErr(""); } },
+              dangerOpen ? "Abbrechen" : "Konto löschen")),
+          dangerOpen
+            ? div({ className: "dangerbox", style: { marginTop: 12 } },
+                para({ style: { lineHeight: 1.6 } },
+                  bb(null, "Das ist endgültig."),
+                  " Dein Konto, dein Profil und alle Planungen, die dir gehören, verschwinden "
+                  + "samt Bildern, Ideen, Nachrichten und Terminen. Zugangscodes zu deinen Planungen "
+                  + "gelten nicht mehr. Was du in Planungen anderer beigetragen hast, bleibt dort "
+                  + "als Inhalt stehen, aber ohne deinen Namen — der Gastgeber braucht seine Planung weiter."),
+                para({ style: { marginTop: 10, lineHeight: 1.6 } },
+                  "Lade dir vorher deine Daten herunter, wenn du sie behalten willst."),
+                div({ className: "row", style: { marginTop: 12, alignItems: "flex-end" } },
+                  div({ style: { flex: 1, minWidth: 160 } },
+                    Field({ label: "Tipp LÖSCHEN zur Bestätigung" },
+                      inp({ className: "inp", value: confirmWord, placeholder: "LÖSCHEN",
+                        onChange: function (ev) { setConfirmWord(ev.target.value); } }))),
+                  btn({ type: "button", className: "btn btn-danger", disabled: working,
+                    onClick: deleteAccount },
+                    working ? span({ className: "spin" }) : null, "Endgültig löschen")))
+            : null))));
 }
 
 function JoinSheet(props) {
@@ -1799,12 +1958,35 @@ function AdminApp(props) {
 
   var myName = (profile && profile.display_name) || (props.session.user.email || "").split("@")[0];
 
+  /* Konzept, Kontakt und Ort stehen in einer eigenen Tabelle mit eigenen
+     Rechten — Postgres schützt Zeilen, nicht Spalten. ps_my_details liefert
+     je Planung nur das, was man sehen darf; der Rest kommt als null zurück.
+     Hier werden beide Hälften wieder zu einem Satz zusammengesetzt, damit
+     der Rest der Oberfläche davon nichts merkt. */
+  var DETAIL_KEYS = ["concept", "model_contact", "location",
+                     "location_lat", "location_lng", "location_url"];
+
   var loadList = useCallback(function () {
-    return sb.from("ps_plannings").select("*").order("created_at", { ascending: false }).then(function (r) {
+    return Promise.all([
+      sb.from("ps_plannings").select("*").order("created_at", { ascending: false }),
+      sb.rpc("ps_my_details")
+    ]).then(function (res) {
       setLoading(false);
-      var rows = r.data || [];
-      setPlans(rows);
-      return rows;
+      var rows = (res[0] && res[0].data) || [];
+      var by = {};
+      ((res[1] && res[1].data) || []).forEach(function (d) { by[d.planning_id] = d; });
+      var merged = rows.map(function (x) {
+        var o = {}, k;
+        for (k in x) o[k] = x[k];
+        var d = by[x.id] || {};
+        for (var i = 0; i < DETAIL_KEYS.length; i++) {
+          k = DETAIL_KEYS[i];
+          o[k] = (d[k] === undefined) ? null : d[k];
+        }
+        return o;
+      });
+      setPlans(merged);
+      return merged;
     });
   }, []);
 
@@ -1880,6 +2062,11 @@ function AdminApp(props) {
     channel.on("postgres_changes",
       { event: "UPDATE", schema: "public", table: "ps_plannings", filter: "id=eq." + sel },
       function () { refresh(); loadList(); });
+    /* Konzept, Kontakt und Ort liegen seit der Rechtetrennung daneben —
+       sonst bliebe eine geänderte Location auf dem zweiten Gerät stehen. */
+    channel.on("postgres_changes",
+      { event: "*", schema: "public", table: "ps_planning_details", filter: "planning_id=eq." + sel },
+      function () { loadList(); });
     channel.subscribe();
 
     function onWake() { if (!document.hidden) loadDetail(sel); }
@@ -2185,6 +2372,80 @@ function TabBar(props) {
     }));
 }
 
+/* ---------- Zwei Ebenen statt zehn Reiter ----------
+   Zehn Reiter findet auf einem Telefon niemand wieder — auch scrollend
+   nicht. Fünf Gruppen passen nebeneinander; die Abschnitte darin stehen
+   als zweite Reihe darunter, aber nur dort, wo es mehr als einen gibt.
+   Versteckte Bereiche fallen aus ihrer Gruppe heraus; bleibt nichts
+   übrig, verschwindet die Gruppe mit. */
+var TAB_GROUPS = [
+  ["uebersicht", "Übersicht",  ["uebersicht"]],
+  ["termin",     "Termine",    ["termine"]],
+  ["bild",       "Bilder",     ["moodboard", "ideen", "shotlist"]],
+  ["vorort",     "Vor Ort",    ["anfahrt", "zeitplan", "checkliste"]],
+  ["reden",      "Absprachen", ["absprachen", "bereiche"]]
+];
+
+function Nav(props) {
+  var visible = {};
+  props.tabs.forEach(function (t) { visible[t[0]] = t; });
+
+  var groups = [];
+  TAB_GROUPS.forEach(function (g) {
+    var kids = g[2].filter(function (k) { return !!visible[k]; });
+    if (kids.length) groups.push({ key: g[0], label: g[1], kids: kids });
+  });
+
+  var cur = null;
+  groups.forEach(function (g) { if (g.kids.indexOf(props.active) >= 0) cur = g; });
+  if (!cur) cur = groups[0] || null;
+
+  /* Wer zu einer Gruppe zurückkehrt, landet wieder auf dem Abschnitt,
+     den er dort zuletzt offen hatte. */
+  var last = useRef({});
+  useEffect(function () { if (cur) last.current[cur.key] = props.active; });
+
+  /* Neuigkeiten aus den Abschnitten rollen zur Gruppe hoch. */
+  var gfresh = {};
+  groups.forEach(function (g) {
+    var n = 0;
+    g.kids.forEach(function (k) { n += (props.fresh && props.fresh[k]) || 0; });
+    gfresh[g.key] = n;
+  });
+
+  function pickGroup(gk) {
+    var g = null;
+    groups.forEach(function (x) { if (x.key === gk) g = x; });
+    if (!g) return;
+    var want = last.current[gk];
+    props.onPick(g.kids.indexOf(want) >= 0 ? want : g.kids[0]);
+  }
+
+  return div({ className: "nav" },
+    h(TabBar, {
+      tabs: groups.map(function (g) {
+        /* Eine Zahl nur dort, wo keine zweite Reihe folgt — sonst stünde
+           sie für eine Summe, die niemand gemeint hat. */
+        return [g.key, g.label, g.kids.length === 1 ? visible[g.kids[0]][2] : 0, null];
+      }),
+      active: cur ? cur.key : null, fresh: gfresh, onPick: pickGroup
+    }),
+    (cur && cur.kids.length > 1)
+      ? div({ className: "subtabs" },
+          cur.kids.map(function (k) {
+            var t = visible[k], nu = (props.fresh && props.fresh[k]) || 0;
+            return btn({
+              key: k, className: "subtab" + (props.active === k ? " on" : ""),
+              title: nu ? nu + " neu seit deinem letzten Besuch" : null,
+              onClick: function () { props.onPick(k); }
+            }, t[1],
+              t[2] ? span({ className: "cnt tnum" }, t[2]) : null,
+              nu ? span({ className: "nu", role: "img",
+                "aria-label": nu + " neu seit deinem letzten Besuch" }) : null);
+          }))
+      : null);
+}
+
 function PlanningView(props) {
   var a = useState("uebersicht"), tab = a[0], setTab = a[1];
   var p = props.planning, d = props.data;
@@ -2257,7 +2518,7 @@ function PlanningView(props) {
                   else { props.clearSel(); props.reloadList(); props.toast("Planung verlassen"); }
                 });
             } }, "Planung verlassen")))),
-    h(TabBar, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
+    h(Nav, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
     div({ className: "content" },
       !d ? Empty({}, "Lade Planungsdaten …")
         : (!owner && !p.is_shared)
@@ -2319,15 +2580,27 @@ function Overview(props) {
   if (!form) return null;
   function set(k, v) { setForm(function (o) { var n = {}; for (var x in o) n[x] = o[x]; n[k] = v; return n; }); }
 
+  /* Zwei Tabellen, ein Knopf: die Eckdaten darf ein Gast sehen, Konzept,
+     Kontakt und Ort liegen getrennt davon. */
   function save() {
     setBusy(true);
-    sb.from("ps_plannings").update({
-      title: form.title, model_name: form.model_name || null, model_contact: form.model_contact || null,
-      shoot_date: form.shoot_date || null, shoot_time: form.shoot_time || null,
-      location: form.location || null, concept: form.concept || null, status: form.status
-    }).eq("id", p.id).then(function (r) {
+    Promise.all([
+      sb.from("ps_plannings").update({
+        title: form.title, model_name: form.model_name || null,
+        shoot_date: form.shoot_date || null, shoot_time: form.shoot_time || null,
+        status: form.status
+      }).eq("id", p.id),
+      sb.from("ps_planning_details").upsert({
+        planning_id: p.id,
+        concept: form.concept || null,
+        model_contact: form.model_contact || null,
+        location: form.location || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "planning_id" })
+    ]).then(function (res) {
       setBusy(false);
-      if (r.error) props.toast("Speichern fehlgeschlagen: " + r.error.message);
+      var err = (res[0] && res[0].error) || (res[1] && res[1].error);
+      if (err) props.toast("Speichern fehlgeschlagen: " + err.message);
       else { props.toast("Gespeichert"); props.reloadList(); }
     });
   }
@@ -3015,11 +3288,12 @@ function Chat(props) {
       div({ ref: endRef })),
     frm({ className: "composer", onSubmit: send },
       txa({
-        className: "inp", rows: 2, value: body, style: { flex: 1, minHeight: 52 },
-        placeholder: "Nachricht schreiben … (⌘/Strg + Enter sendet)",
+        className: "inp", rows: 3, value: body,
+        placeholder: "Nachricht schreiben …",
         onChange: function (ev) { setBody(ev.target.value); },
         onKeyDown: function (ev) { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) send(ev); }
       }),
+      span({ className: "kb not-m" }, "⌘/Strg + Enter sendet"),
       btn({ className: "btn btn-pri", disabled: busy }, "Senden")));
 }
 
@@ -3182,10 +3456,10 @@ function loadLeaflet() {
   leafletLoading = new Promise(function (resolve, reject) {
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    css.href = "lib/leaflet.css";
     document.head.appendChild(css);
     var js = document.createElement("script");
-    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.src = "lib/leaflet.js";
     js.onload = function () { resolve(window.L); };
     js.onerror = function () { reject(new Error("Kartenbibliothek nicht erreichbar")); };
     document.head.appendChild(js);
@@ -3219,11 +3493,16 @@ function MapView(props) {
   var s2 = useState(false), startBusy = s2[0], setStartBusy = s2[1];
   var d = useState(""), err = d[0], setErr = d[1];
   var lo = useState(false), locOpen = lo[0], setLocOpen = lo[1];
+  /* Die Kartenkacheln kommen von der OpenStreetMap Foundation. Sie werden
+     erst geholt, wenn man es sagt — sonst ginge die IP dorthin, bevor man
+     überhaupt etwas angeklickt hat. Die Zusage merkt sich das Gerät. */
+  var mo = useState(function () { return store.get("ps_map_ok") === "1"; });
+  var mapOk = mo[0], setMapOk = mo[1];
   var mapRef = useRef(null), boxRef = useRef(null), layersRef = useRef([]);
 
   /* Karte aufbauen und bei Änderungen neu bestücken */
   useEffect(function () {
-    if (!hasTarget || !boxRef.current) return;
+    if (!mapOk || !hasTarget || !boxRef.current) return;
     var dead = false;
     loadLeaflet().then(function (L) {
       if (dead || !boxRef.current) return;
@@ -3255,7 +3534,7 @@ function MapView(props) {
       setTimeout(function () { if (!dead && mapRef.current) mapRef.current.invalidateSize(); }, 60);
     }, function () { setErr("Die Karte konnte nicht geladen werden. Die Routen-Knöpfe funktionieren trotzdem."); });
     return function () { dead = true; };
-  }, [hasTarget, p.location_lat, p.location_lng, startPt && startPt.lat, startPt && startPt.lng]);
+  }, [mapOk, hasTarget, p.location_lat, p.location_lng, startPt && startPt.lat, startPt && startPt.lng]);
 
   useEffect(function () {
     return function () { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
@@ -3264,9 +3543,10 @@ function MapView(props) {
   /* ---------- Location der Planung ---------- */
   function applyTarget(pt, label) {
     setLocBusy(true); setErr(""); setLocHits(null);
-    var patch = { location_lat: pt.lat, location_lng: pt.lng };
+    var patch = { planning_id: p.id, location_lat: pt.lat, location_lng: pt.lng,
+                  updated_at: new Date().toISOString() };
     if (label && !String(p.location || "").trim()) patch.location = label;
-    sb.from("ps_plannings").update(patch).eq("id", p.id).then(function (r) {
+    sb.from("ps_planning_details").upsert(patch, { onConflict: "planning_id" }).then(function (r) {
       setLocBusy(false);
       if (r.error) { setErr(r.error.message); return; }
       setLocOpen(false);
@@ -3291,8 +3571,10 @@ function MapView(props) {
     });
   }
   function clearTarget() {
-    sb.from("ps_plannings").update({ location_lat: null, location_lng: null, location_url: null })
-      .eq("id", p.id).then(function () { props.reloadList && props.reloadList(); props.reload(); });
+    sb.from("ps_planning_details")
+      .update({ location_lat: null, location_lng: null, location_url: null })
+      .eq("planning_id", p.id)
+      .then(function () { props.reloadList && props.reloadList(); props.reload(); });
   }
 
   /* ---------- Eigener Startpunkt ---------- */
@@ -3380,7 +3662,17 @@ function MapView(props) {
           div({ className: "hd" },
             h3(null, p.location || "Anfahrt"),
             span({ className: "lab" }, "Luftlinie")),
-          div({ className: "mapwrap" }, div({ ref: boxRef, style: { height: "100%", width: "100%" } })),
+          mapOk
+            ? div({ className: "mapwrap" }, div({ ref: boxRef, style: { height: "100%", width: "100%" } }))
+            : div({ className: "mapask" },
+                para(null,
+                  "Die Karte wird von der ",
+                  h("a", { href: "https://osmfoundation.org/wiki/Privacy_Policy", target: "_blank", rel: "noopener noreferrer" },
+                    "OpenStreetMap Foundation"),
+                  " geladen. Dabei geht deine IP-Adresse dorthin. Deshalb passiert das erst, wenn du es sagst."),
+                btn({ className: "btn btn-pri", onClick: function () { store.set("ps_map_ok", "1"); setMapOk(true); } },
+                  "Karte laden"),
+                span({ className: "lab" }, "Die Entscheidung gilt auf diesem Gerät weiter. Die Routen-Knöpfe unten funktionieren auch ohne Karte.")),
           dist !== null
             ? div({ className: "distline" },
                 bb(null, dist < 10 ? dist.toFixed(1) : Math.round(dist)),
@@ -3981,7 +4273,7 @@ function ModelApp(props) {
           Status({ value: p.status }),
           h(ThemeBtn),
           btn({ className: "btn btn-quiet btn-sm", onClick: props.onLeave }, "Verlassen")))),
-    h(TabBar, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
+    h(Nav, { tabs: tabs, active: tab, onPick: setTab, fresh: fresh }),
     div({ className: "content" },
       tab === "uebersicht" ? h(ModelOverview, { p: p, bundle: bundle, name: name })
         : tab === "termine" ? h(Scheduling, { hostName: hostName, guestName: guestName, planning: p, availability: bundle.availability, proposals: bundle.proposals, code: code, reload: reload, toast: props.toast, authorName: name })
