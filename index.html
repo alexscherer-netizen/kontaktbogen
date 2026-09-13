@@ -7,9 +7,9 @@
 </head>
 <body>
 <title>Kontaktbogen</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<!-- Schriften liegen im Repository. Beim Aufruf wird kein fremder Server
+     kontaktiert: kein Google, kein CDN. Erzeugt von dateien-holen.html. -->
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* ============================================================
    Tokens
@@ -985,9 +985,9 @@ hr.sep{border:none; border-top:1px solid var(--line); margin:14px 0}
 
 <div id="root"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="lib/react.js"></script>
+<script src="lib/react-dom.js"></script>
+<script src="lib/supabase.js"></script>
 
 <script>
 "use strict";
@@ -1587,14 +1587,12 @@ function Datenschutz() {
       : null,
     h3(null, "Beim Aufruf geladene Fremdinhalte"),
     para(null,
-      "Diese Anwendung lädt Programmbibliotheken und Schriften von externen Servern. Dabei wird deine IP-Adresse "
-      + "an den jeweiligen Anbieter übertragen, technisch bedingt und bevor du irgendetwas anklickst:"),
-    h("ul", null,
-      h("li", null, "cdnjs (Cloudflare, USA) — Programmbibliotheken"),
-      h("li", null, "jsDelivr — Programmbibliothek für den Datenbankzugriff"),
-      h("li", null, "Google Fonts (Google Ireland Limited) — Schriftarten")),
+      bb(null, "Keine. "),
+      "Schriften und Programmbibliotheken werden vom selben Server ausgeliefert wie die Anwendung selbst. "
+      + "Beim Aufruf dieser Seite wird kein weiterer Anbieter kontaktiert und keine IP-Adresse an Dritte "
+      + "übertragen — insbesondere nicht an Google Fonts, cdnjs oder jsDelivr."),
     para(null,
-      "Verbindungen zu weiteren Anbietern entstehen erst durch eine eigene Handlung von dir:"),
+      "Verbindungen zu anderen Anbietern entstehen erst durch eine eigene Handlung von dir:"),
     h("ul", null,
       h("li", null, bb(null, "Supabase"), " — sobald du dich anmeldest oder eine Planung öffnest (Server in Irland, EU)"),
       h("li", null, bb(null, "OpenStreetMap Foundation"), " — Kartenkacheln, erst nach einem Klick auf „Karte laden“"),
@@ -3458,10 +3456,10 @@ function loadLeaflet() {
   leafletLoading = new Promise(function (resolve, reject) {
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    css.href = "lib/leaflet.css";
     document.head.appendChild(css);
     var js = document.createElement("script");
-    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.src = "lib/leaflet.js";
     js.onload = function () { resolve(window.L); };
     js.onerror = function () { reject(new Error("Kartenbibliothek nicht erreichbar")); };
     document.head.appendChild(js);
